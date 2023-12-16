@@ -1,0 +1,85 @@
+class Request {
+  constructor(url, params, options) {
+    this.url = url;
+    this.params = params;
+    if (options == undefined) {
+      this.options = {};
+    } else {
+      this.options = options;
+    }
+
+  }
+
+  async get() {
+    return await this.makeRequest('get');
+  }
+
+  async post() {
+    return await this.makeRequest('post');
+  }
+
+  async put() {
+    return await this.makeRequest('put');
+  }
+
+  async delete() {
+    return await this.makeRequest('delete');
+  }
+
+  async makeRequest(method) {
+    if (root_app.state.has_internet) {
+      var url = HOST + this.url;
+
+      try {
+        if (method == 'get') {
+          var response = await axios.get(url, { params: this.params });
+        }
+
+        if (method == 'post') {
+          var response = await axios.post(url,
+            this.params,
+            {
+              headers: { Authorization: `Bearer ${API_TOKEN}` }
+            }
+          );
+        }
+
+        if (method == 'put') {
+          var response = await axios.put(url,
+            this.params,
+            {
+              headers: { Authorization: `Bearer ${API_TOKEN}` }
+            }
+          );
+        }
+
+        if (method == 'delete') {
+          var response = await axios.delete(url,
+            {
+              headers: { Authorization: `Bearer ${API_TOKEN}` },
+              data: this.params
+            },
+          );
+        }
+
+        if (response.data['response'] != undefined) {
+          return response.data['response'];
+        } else {
+          return response.data;
+        }
+
+      } catch (error) {
+        if (this.options.do_not_show_error != true) {
+          root_app.showError('Ошибка подключения к серверу', this.options.desciption_error);
+        }
+        return false;
+      }
+
+    } else {
+      if (this.options.do_not_show_error != true) {
+        root_app.showError('Отсутствует подключение к интернету', this.options.desciption_error);
+      }
+      return false;
+    }
+  }
+}
