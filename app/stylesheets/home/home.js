@@ -106,5 +106,10 @@ const homeStyles = StyleSheet.create({
   header_empty_block: {
     width: 30,
     height: 30
-  }
+  },
+  settings_image: {
+    width: 20,
+    height: 20,
+    margin: 5
+  },
 });

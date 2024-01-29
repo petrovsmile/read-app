@@ -118,7 +118,6 @@ class Show extends React.Component {
                         />
                       </View>
                     )}
-
                   </View>
                 }
               </View>
@@ -128,9 +127,14 @@ class Show extends React.Component {
 
             {this.state.have_file == false && this.props.root_state.has_internet == true &&
               <View style={{ padding: 15 }}>
-                <Text style={{ color: '#FFF' }}>* - Вы можете скачать книгу, чтобы читать ее без интернета</Text>
+                <Text style={{ color: '#FFF', textAlign: 'center' }}>
+                  Вы можете скачать книгу,{"\n"} чтобы читать ее без интернета
+                </Text>
+
                 {this.props.root_state.has_subscription == false &&
-                  <Text style={{ marginTop: 15, color: '#FFF' }}>** - Функция скачивания доступна только при наличии подписки.</Text>
+                  <Text style={{ marginTop: 15, color: '#FFF', textAlign: 'center' }}>
+                    Функция скачивания доступна{"\n"} только при наличии подписки
+                  </Text>
                 }
               </View>
             }
@@ -138,7 +142,7 @@ class Show extends React.Component {
             {this.state.have_file == true &&
               <View style={{ padding: 15 }}>
                 <Text style={{ color: '#FFF', textAlign: 'center' }}>Книга скачана.</Text>
-                <Text style={{ color: '#FFF', textAlign: 'center' }}>Вы можете читать ее без интернета.</Text>
+                <Text style={{ color: '#FFF', textAlign: 'center' }}>Вы можете читать ее без интернета</Text>
               </View>
             }
           </View>

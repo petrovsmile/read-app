@@ -58,6 +58,7 @@ import { MobileAds, BannerView, InterstitialAdManager, RewardedAdManager } from 
 
 MobileAds.initialize({ userConsent: true, locationConsent: true });
 
+
 // import {
 //   Appodeal,
 //   AppodealSdkEvent,

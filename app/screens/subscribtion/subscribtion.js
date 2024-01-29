@@ -14,10 +14,10 @@ class Subscription extends React.Component {
     this.read_1_month = 99;
     this.read_6_month = 499;
     this.read_1_year = 799;
+    this.read_forever = 2490;
   }
 
-  componentDidMount() {
-  }
+  componentDidMount() {  }
 
   cancelSubscription() {
     new Storage().set('has_subscription', 'false');
@@ -65,17 +65,30 @@ class Subscription extends React.Component {
 
         if (this.state.active_subscription == 1) {
           var productId = 'read_1_month';
+          var type = 'subscription';
         }
         if (this.state.active_subscription == 2) {
           var productId = 'read_6_month';
+          var type = 'subscription';
         }
         if (this.state.active_subscription == 3) {
           var productId = 'read_1_year';
+          var type = 'subscription';
+        }
+        if (this.state.active_subscription == 4) {
+          var productId = 'read_forever';
+          var type = 'product';
         }
 
-        var purchase = await RNIap.requestSubscription({ sku: productId });
+        if (type == 'subscription') {
+          var purchase = await RNIap.requestSubscription({ sku: productId });
+          var time_subsription = moment.unix(parseInt(purchase.transactionDate) / 1000);
+        }
 
-        var time_subsription = moment.unix(parseInt(purchase.transactionDate) / 1000);
+        if (type == 'product') {
+          var purchase = await RNIap.requestPurchase({ sku: productId });
+          var time_subsription = moment.unix(parseInt(purchase.transactionDate) / 1000);
+        }
 
         if (purchase.productId == 'read_1_month') {
           var end_date = time_subsription.clone().add(1, 'months');
@@ -88,6 +101,10 @@ class Subscription extends React.Component {
         if (purchase.productId == 'read_1_year') {
           var end_date = time_subsription.clone().add(1, 'years');
           var subscription_id = 3;
+        }
+        if (purchase.productId == 'read_forever') {
+          var end_date = time_subsription.clone().add(200, 'years');
+          var subscription_id = 4;
         }
 
         var subscription_info = {
@@ -111,11 +128,14 @@ class Subscription extends React.Component {
           );
         }
 
+        this.checkSubscription();
+
         this.setState({
           load_payment_button: false
         });
       }
     } catch (error) {
+      console.log(error);
       this.setState({
         load_payment_button: false
       });
@@ -185,6 +205,17 @@ class Subscription extends React.Component {
     }
   }
 
+  can_show_pricing(){
+    var can_show = true;
+    if (this.props.root.state.has_subscription == true){
+      if (this.props.root.state.subscription_info != undefined) {
+        can_show = this.props.root.state.subscription_info.subscription.id != 4;
+      }
+    }
+
+    return can_show;
+  }
+
   render() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
@@ -235,13 +266,25 @@ class Subscription extends React.Component {
               {this.props.root.state.has_subscription == true ? (
                 <React.Fragment>
                   <View style={{ marginTop: 30, borderRadius: 10, backgroundColor: '#eee', padding: 10 }}>
-                    <Text style={{ textAlign: 'center', fontSize: 18 }}>
-                      Ваш PRO-доступ активен до:
-                    </Text>
-                    <View style={{ marginTop: 5 }}>
-                      <Text style={{ textAlign: 'center', fontSize: 18, marginTop: 5, fontWeight: 'bold', color: '#f05458' }}> {moment(this.props.root.state.subscription_info.end_date).format('DD.MM.YYYY')}</Text>
-                    </View>
-
+                    {this.props.root.state.subscription_info.subscription.id == 4 ? (
+                      <React.Fragment>
+                        <Text style={{ textAlign: 'center', fontSize: 18 }}>
+                          У вас активирован
+                        </Text>
+                        <Text style={{ textAlign: 'center', fontSize: 18 }}>
+                          вечный PRO-доступ
+                        </Text>
+                      </React.Fragment>
+                    ) : (
+                      <React.Fragment>
+                        <Text style={{ textAlign: 'center', fontSize: 18 }}>
+                          Ваш PRO-доступ активен до:
+                        </Text>
+                        <View style={{ marginTop: 5 }}>
+                          <Text style={{ textAlign: 'center', fontSize: 18, marginTop: 5, fontWeight: 'bold', color: '#f05458' }}> {moment(this.props.root.state.subscription_info.end_date).format('DD.MM.YYYY')}</Text>
+                        </View>
+                      </React.Fragment>
+                    )}
                   </View>
 
                   {root_app.type_payment == 'by_store' &&
@@ -317,7 +360,7 @@ class Subscription extends React.Component {
               </React.Fragment>
             }
 
-            {(root_app.type_payment == 'by_yoo_kassa' || (root_app.type_payment == 'by_store' && this.props.root.state.has_subscription == false)) &&
+            {this.can_show_pricing() && 
               <React.Fragment>
 
                 <Text style={{ marginTop: 15, textAlign: 'center', fontSize: 18, fontWeight: 'bold' }}>
@@ -387,7 +430,9 @@ class Subscription extends React.Component {
                       padding: 15,
                       height: 85,
                       flexDirection: 'row',
-                      justifyContent: 'space-between'
+                      justifyContent: 'space-between',
+                      borderBottomWidth: 1,
+                      borderBottomColor: '#ddd'
                     }, this.state.active_subscription == 3 && { borderBottomColor: '#f05458', borderColor: '#f05458', borderWidth: 1, transform: [{ scale: 1.1 }], zIndex: 2 }]}>
 
                       <View>
@@ -399,6 +444,24 @@ class Subscription extends React.Component {
                         <Text style={{ fontSize: 18, textAlign: 'center' }}>{(this.read_1_year / 12).toFixed(0)} руб/мес</Text>
                       </View>
 
+                    </View>
+                  </TouchableWithoutFeedback>
+
+                  <TouchableWithoutFeedback onPress={() => this.setActiveSubscription(4)}>
+                    <View style={[{
+                      borderRadius: 10,
+                      zIndex: 1,
+                      backgroundColor: '#FFF',
+                      padding: 15,
+                      height: 85,
+                      flexDirection: 'row',
+                      justifyContent: 'space-between'
+                    }, this.state.active_subscription == 4 && { borderBottomColor: '#f05458', borderColor: '#f05458', borderWidth: 1, transform: [{ scale: 1.1 }], zIndex: 2 }]}>
+
+                      <View>
+                        <Text style={[{ fontSize: 22, fontWeight: 'bold', color: '#000' }, this.state.active_subscription == 4 && { color: '#f05458' }]}>Навсегда</Text>
+                        <Text style={{ fontSize: 16, marginTop: 5 }}>{this.read_forever} руб</Text>
+                      </View>
                     </View>
                   </TouchableWithoutFeedback>
                 </View>

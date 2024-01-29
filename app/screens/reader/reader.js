@@ -9,6 +9,7 @@ class Reader extends React.Component {
     root_reader = this;
 
     this.state = {
+      current_page: null,
       page: null,
       pages: null,
       percent: 0,
@@ -211,6 +212,10 @@ class Reader extends React.Component {
           });
         }
       }
+
+      this.setState({
+        current_page: this.state.page
+      });
     }
   }
 
@@ -232,29 +237,25 @@ class Reader extends React.Component {
 
   async checkAd() {
     if (this.props.root_state.has_internet == true && this.props.root_state.has_subscription == false) {
-      var isLoaded = Appodeal.isLoaded(AppodealAdType.REWARDED_VIDEO);
-      if (isLoaded == false) {
+      var time_ad = await new Storage().get('time_ad');
+
+      if (time_ad == undefined) {
+        time_ad = moment();
+        await new Storage().set('time_ad', moment().format());
+      } else {
+        time_ad = moment(time_ad);
+      }
+
+      var now_time = moment();
+
+      var range_time = (now_time - time_ad) / 1000 / 60;
+
+      //range_time = 40;
+
+      if (range_time < 30) {
         this.openPage(false);
       } else {
-        var time_ad = await new Storage().get('time_ad');
-
-        if (time_ad == undefined) {
-          time_ad = moment();
-          await new Storage().set('time_ad', moment().format());
-        } else {
-          time_ad = moment(time_ad);
-        }
-
-        var now_time = moment();
-
-        var range_time = (now_time - time_ad) / 1000 / 60;
-
-        if (range_time < 1) {
-          //AppMetrica.reportEvent('skipAdInfo');
-          this.openPage(false);
-        } else {
-          this.showAdInfo();
-        }
+        this.showAdInfo();
       }
     } else {
       this.openPage(false);
@@ -266,6 +267,13 @@ class Reader extends React.Component {
 
     this.setState({
       showAdInfo: true,
+    });
+  }
+
+  closeAdInfo() {
+    this.setState({
+      showAdInfo: false,
+      page: this.state.current_page
     });
   }
 
@@ -281,49 +289,47 @@ class Reader extends React.Component {
     this.setState({
       showTranslateWord: false,
     });
-    this.showShortAd();
   }
 
   closeTranslateSentence() {
     this.setState({
       showTranslateSentence: false,
     });
-    this.showShortAd();
-  }
-
-  async showShortAd() {
-    if (this.props.root_state.has_internet == true && this.props.root_state.has_subscription == false) {
-      const canShow = Appodeal.canShow(AppodealAdType.INTERSTITIAL);
-      var isLoaded = Appodeal.isLoaded(AppodealAdType.INTERSTITIAL);
-      if (isLoaded == true) {
-        var time_ad = await new Storage().get('time_short_ad');
-
-        if (time_ad == undefined) {
-          time_ad = moment();
-          await new Storage().set('time_short_ad', moment().format());
-        } else {
-          time_ad = moment(time_ad);
-        }
-
-        var now_time = moment();
-
-        var range_time = (now_time - time_ad) / 1000 / 60;
-        if (range_time > 3) {
-          Appodeal.show(AppodealAdType.INTERSTITIAL);
-        }
-      }
-    }
   }
 
   async showAd() {
-    //AppMetrica.reportEvent('showAd');    
-
     await this.setState({
       showAdInfo: false,
       showAdOpacity: true,
     });
 
-    Appodeal.show(AppodealAdType.REWARDED_VIDEO);
+    RewardedAdManager.showAd('R-M-1281415-13')
+      .then((resp) => {
+
+        if (root_reader.state.showAdOpacity == true) {
+          root_reader.setState({
+            showAdOpacity: false,
+          });
+          new Storage().set('time_ad', moment().format());
+          root_reader.openPage(false);
+        }
+
+      })
+      .catch((error: any) => {
+
+        if (root_reader.state.showAdOpacity == true) {
+          root_reader.setState({
+            showAdOpacity: false,
+          });
+          if (root_reader.state.showNoAd == false) {
+            root_reader.setState({
+              showNoAd: true,
+            });
+          }
+          root_reader.openPage(false);
+        }
+
+      });
   }
 
   closeTraining() {
@@ -659,9 +665,8 @@ class Reader extends React.Component {
             }
 
             {(this.state.showAdInfo && this.props.root_state.has_subscription == false) &&
-              <React.Fragment>
-                <View style={{ position: 'absolute', left: 0, bottom: 0, width: '100%', height: '120%', backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 10 }}>
-
+              <TouchableOpacity style={{ position: 'absolute', left: 0, bottom: 0, width: '100%', height: '120%', backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 10 }} onPress={() => this.closeAdInfo()}>
+                <TouchableWithoutFeedback>
                   <View style={{
                     position: 'absolute',
                     bottom: 0,
@@ -671,8 +676,6 @@ class Reader extends React.Component {
                     borderTopLeftRadius: 20,
                     borderTopRightRadius: 20,
                   }}>
-
-
                     <View style={{ padding: 30 }}>
                       <Text style={{ fontSize: 17 }}>
                         Чтобы приложение было бесплатным, мы вынуждены показывать рекламу. {"\n"} {"\n"}Вы можете приобрести PRO-версию, чтобы отключить рекламу, а еще будет доступен режим чтения без интернета.
@@ -687,8 +690,8 @@ class Reader extends React.Component {
                       </TouchableOpacity>
                     </View>
                   </View>
-                </View>
-              </React.Fragment>
+                </TouchableWithoutFeedback>
+              </TouchableOpacity>
             }
 
             <ModalNoAd visible={this.state.showNoAd} drawer={this.props.drawer} close={() => this.closeNoAdInfo()} />
@@ -698,11 +701,13 @@ class Reader extends React.Component {
               close={() => this.closeTraining()} />
 
             <ModalTranslateSentence
+              has_subscription={this.props.root_state.has_subscription}
               translate={this.modalTranslateSentence}
               visible={this.state.showTranslateSentence}
               close={() => this.closeTranslateSentence()} />
 
             <ModalTranslateWord
+              has_subscription={this.props.root_state.has_subscription}
               original={this.modalTranslateWordOriginal}
               transcription={this.modalTranslateWordTranscription}
               translate={this.modalTranslateWordTranslate}
@@ -752,20 +757,40 @@ class Reader extends React.Component {
               )}
 
               <TouchableWithoutFeedback onPress={() => this.openThemeSetting()}>
-                <View style={this.state.showThemeSetting && { opacity: 0.5 }}>
+                <View>
                   {this.state.textColorTheme == '#ffffff' &&
-                    <Image
-                      style={{ height: 30, width: 30, marginTop: 5, marginRight: 10 }}
-                      resizeMode={'contain'}
-                      source={require('./app/images/header/property-white.png')}
-                    />
+                    <React.Fragment>
+                      {this.state.showThemeSetting ? (
+                        <Image
+                          style={{ height: 30, width: 30, marginTop: 5, marginRight: 10 }}
+                          resizeMode={'contain'}
+                          source={require('./app/images/layouts/error_close.png')}
+                        />
+                      ) : (
+                        <Image
+                          style={{ height: 30, width: 30, marginTop: 5, marginRight: 10 }}
+                          resizeMode={'contain'}
+                          source={require('./app/images/header/property-white.png')}
+                        />
+                      )}
+                    </React.Fragment>
                   }
                   {this.state.textColorTheme == '#000000' &&
-                    <Image
-                      style={{ height: 30, width: 30, marginTop: 5, marginRight: 10 }}
-                      resizeMode={'contain'}
-                      source={require('./app/images/header/property.png')}
-                    />
+                    <React.Fragment>
+                      {this.state.showThemeSetting ? (
+                        <Image
+                          style={{ height: 30, width: 30, marginTop: 5, marginRight: 10 }}
+                          resizeMode={'contain'}
+                          source={require('./app/images/home/settings-close.png')}
+                        />
+                      ) : (
+                        <Image
+                          style={{ height: 30, width: 30, marginTop: 5, marginRight: 10 }}
+                          resizeMode={'contain'}
+                          source={require('./app/images/header/property.png')}
+                        />
+                      )}
+                    </React.Fragment>
                   }
                 </View>
               </TouchableWithoutFeedback>
@@ -803,21 +828,32 @@ class Reader extends React.Component {
                   style={{ flex: 1 }}
                 >
                   {this.state.paragraphs.map((paragraph, index) =>
-                    <View key={index} onLayout={(event) => this.checkBookmakScroll(event, paragraph['name'])}>
-                      <Paragraph
-                        data={paragraph}
-                        openTranslateSentence={(value) => this.translateSentence(value)}
-                        openTranslateWord={(o, tr, ts) => this.openTranslateWord(o, tr, ts)}
-                        openAuthModal={() => this.openAuthModal()}
-                        setBookmark={(value) => this.setBookmark(value)}
-                        current_user={this.props.root_state.current_user}
-                        page={this.state.page}
-                        book_name={this.book_name}
-                        book_name_en={this.book_name_en}
-                        book_id={this.props.stack.route.params.book_id}
-                        percent={this.state.percent}
-                      />
-                    </View>
+                    <React.Fragment key={index}>
+                      {
+                        this.props.root_state.has_subscription == false && (index == 3 || index == 7) &&
+                        <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', height: 250, marginTop: 20 }}>
+                          <BannerView
+                            adUnitId={'R-M-1281415-12'}
+                            size="BANNER_300x250"
+                          />
+                        </View>
+                      }
+                      <View onLayout={(event) => this.checkBookmakScroll(event, paragraph['name'])}>
+                        <Paragraph
+                          data={paragraph}
+                          openTranslateSentence={(value) => this.translateSentence(value)}
+                          openTranslateWord={(o, tr, ts) => this.openTranslateWord(o, tr, ts)}
+                          openAuthModal={() => this.openAuthModal()}
+                          setBookmark={(value) => this.setBookmark(value)}
+                          current_user={this.props.root_state.current_user}
+                          page={this.state.page}
+                          book_name={this.book_name}
+                          book_name_en={this.book_name_en}
+                          book_id={this.props.stack.route.params.book_id}
+                          percent={this.state.percent}
+                        />
+                      </View>
+                    </React.Fragment>
                   )}
                   <View style={{ height: 50 }}></View>
                 </ScrollView>

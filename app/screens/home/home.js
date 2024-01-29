@@ -30,7 +30,7 @@ class Home extends React.Component {
     await this.setState({ show_only_loaded: show_only_loaded === 'true' });
 
     this.getBooks();
-  }
+  } 
 
   async getBooks() {
     await this.setState({
@@ -81,7 +81,7 @@ class Home extends React.Component {
 
       if (this.state.level == 'all' || this.state.level == book.level) {
 
-        var check = true;
+        var check = false;
 
         //Названия
         if (this.search_value.length == 0) {
@@ -294,19 +294,21 @@ class Home extends React.Component {
             <LevelSelectorPoint onPress={(level) => this.setLevel(level)} name="C1" color="#fe4444" level="5" current_level={this.state.level} />
 
 
-            <TouchableOpacity onPress={() => this.openProperty()} style={{ backgroundColor: '#ddd', borderRadius: 7, marginLeft: 3 }}>
-              {this.state.open_property == false &&
-                <Image
-                  style={{ height: 15, width: 15, margin: 7.5 }}
-                  source={require('./app/images/home/settings.png')}
-                />
-              }
-              {this.state.open_property == true &&
-                <Image
-                  style={{ height: 15, width: 15, margin: 7.5 }}
-                  source={require('./app/images/home/settings-close.png')}
-                />
-              }
+            <TouchableOpacity onPress={() => this.openProperty()}>
+              <View style={{ backgroundColor: '#ddd', borderRadius: 7, marginLeft: 3 }}>
+                {this.state.open_property == false &&
+                  <Image
+                    style={homeStyles.settings_image}
+                    source={require('./app/images/home/settings.png')}
+                  />
+                }
+                {this.state.open_property == true &&
+                  <Image
+                    style={homeStyles.settings_image}
+                    source={require('./app/images/home/settings-close.png')}
+                  />
+                }
+              </View>
             </TouchableOpacity>
           </View>
           {this.state.open_property == true &&
@@ -355,15 +357,6 @@ class Home extends React.Component {
           }
 
         </View>
-
-        <BannerView
-          adUnitId={'R-M-1281415-12'}
-          size="BANNER_300x250"
-          onLoad={() => console.log('onLoad')}
-          onLeftApplication={() => console.log('onLeftApplication')}
-          onReturnedToApplication={() => console.log('onReturnedToApplication')}
-          onError={(err: any) => console.log('error', err)}
-        />
 
         <React.Fragment>
           {this.state.do_not_find == true &&

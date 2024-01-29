@@ -25,6 +25,7 @@ class RootApp extends React.Component {
     
     await RNIap.initConnection();
     await RNIap.getSubscriptions({ skus: ['read_1_month', 'read_6_month', 'read_1_year'] });
+    await RNIap.getProducts({ skus: ['read_forever'] });
 
     var current_user = await new Storage().get('current_user');
 
@@ -64,10 +65,7 @@ class RootApp extends React.Component {
   async checkSubscription() {
     //await new Storage().set('has_subscription', 'false');
     
-    var has_subscription = await new Storage().get('has_subscription');
-    if (has_subscription == undefined) {
-      has_subscription = 'false';
-    }
+    var has_subscription = await new Storage().get('has_subscription', 'false');
 
     var subscription_info = await new Storage().get('subscription_info');
     if (subscription_info != undefined) {
@@ -82,7 +80,7 @@ class RootApp extends React.Component {
     });
  
     if (this.type_payment == 'by_store') {
-      var purchases = await RNIap.getPurchaseHistory({skus: ['read_1_month', 'read_6_month', 'read_1_year']});
+      var purchases = await RNIap.getPurchaseHistory({skus: ['read_1_month', 'read_6_month', 'read_1_year', 'read_forever']});
       if (purchases.length != 0) {
         purchases.sort(function (a, b) {
           var keyA = new Date(a.transactionDate),
@@ -108,6 +106,10 @@ class RootApp extends React.Component {
         if (purchase.productId == 'read_1_year') {
           var end_date = time_subsription.clone().add(1, 'years');
           var subscription_id = 3;
+        }
+        if (purchase.productId == 'read_forever') {
+          var end_date = time_subsription.clone().add(200, 'years');
+          var subscription_id = 4;
         }
 
         if (moment() < end_date) {

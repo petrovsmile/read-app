@@ -1,6 +1,41 @@
 PODS:
   - boost (1.83.0)
   - CocoaAsyncSocket (7.6.5)
+  - DivKit (13.0.0):
+    - DivKit_Base (= 13.0.0)
+    - DivKit_BaseTiny (= 13.0.0)
+    - DivKit_BaseUI (= 13.0.0)
+    - DivKit_CommonCore (= 13.0.0)
+    - DivKit_LayoutKit (= 13.0.0)
+    - DivKit_LayoutKitInterface (= 13.0.0)
+    - DivKit_Networking (= 13.0.0)
+    - DivKit_Serialization (= 13.0.0)
+    - DivKit_TemplatesSupport (= 13.0.0)
+  - DivKit_Base (13.0.0):
+    - DivKit_BaseTiny (= 13.0.0)
+    - DivKit_BaseUI (= 13.0.0)
+  - DivKit_BaseTiny (13.0.0)
+  - DivKit_BaseUI (13.0.0):
+    - DivKit_BaseTiny (= 13.0.0)
+  - DivKit_CommonCore (13.0.0):
+    - DivKit_Base (= 13.0.0)
+    - DivKit_BaseTiny (= 13.0.0)
+  - DivKit_LayoutKit (13.0.0):
+    - DivKit_BaseTiny (= 13.0.0)
+    - DivKit_BaseUI (= 13.0.0)
+    - DivKit_CommonCore (= 13.0.0)
+    - DivKit_LayoutKitInterface (= 13.0.0)
+  - DivKit_LayoutKitInterface (13.0.0):
+    - DivKit_Base (= 13.0.0)
+    - DivKit_BaseTiny (= 13.0.0)
+    - DivKit_BaseUI (= 13.0.0)
+  - DivKit_Networking (13.0.0):
+    - DivKit_Base (= 13.0.0)
+  - DivKit_Serialization (13.0.0):
+    - DivKit_CommonCore (= 13.0.0)
+  - DivKit_TemplatesSupport (13.0.0):
+    - DivKit_CommonCore (= 13.0.0)
+    - DivKit_Serialization (= 13.0.0)
   - DoubleConversion (1.1.6)
   - FBLazyVector (0.73.0)
   - FBReactNativeSpec (0.73.0):
@@ -944,6 +979,24 @@ PODS:
   - React-Mapbuffer (0.73.0):
     - glog
     - React-debug
+  - react-native-netinfo (11.2.1):
+    - React-Core
+  - react-native-restart (0.0.27):
+    - React-Core
+  - react-native-safe-area-context (4.8.1):
+    - React-Core
+  - react-native-slider (4.5.0):
+    - glog
+    - RCT-Folly (= 2022.05.16.00)
+    - React-Core
+  - react-native-tracking-transparency (0.1.2):
+    - React
+  - react-native-webview (13.6.3):
+    - React-Core
+  - react-native-yandex-mobile-ads (0.8.0):
+    - React-Core
+    - YandexMobileAds (= 5.5.0)
+    - YandexMobileAdsInstream (= 0.15.0)
   - React-nativeconfig (0.73.0)
   - React-NativeModulesApple (0.73.0):
     - glog
@@ -1111,7 +1164,44 @@ PODS:
     - React-jsi (= 0.73.0)
     - React-logger (= 0.73.0)
     - React-perflogger (= 0.73.0)
+  - RNCAsyncStorage (1.21.0):
+    - React-Core
+  - RNFS (2.20.0):
+    - React-Core
+  - RNGestureHandler (2.14.0):
+    - glog
+    - RCT-Folly (= 2022.05.16.00)
+    - React-Core
+  - RNIap (12.12.1):
+    - React-Core
+  - RNReanimated (3.6.1):
+    - glog
+    - RCT-Folly (= 2022.05.16.00)
+    - React-Core
+    - ReactCommon/turbomodule/core
+  - RNScreens (3.29.0):
+    - glog
+    - RCT-Folly (= 2022.05.16.00)
+    - React-Core
+  - RNSVG (14.1.0):
+    - React-Core
   - SocketRocket (0.6.1)
+  - YandexMobileAds (5.5.0):
+    - DivKit (~> 13.0)
+    - YandexMobileAds/Static (= 5.5.0)
+  - YandexMobileAds/Static (5.5.0):
+    - DivKit (~> 13.0)
+    - YandexMobileMetrica (< 5.0.0, >= 4.0.0)
+  - YandexMobileAdsInstream (0.15.0):
+    - YandexMobileAds (~> 5.5.0)
+  - YandexMobileMetrica (4.5.2):
+    - YandexMobileMetrica/Static (= 4.5.2)
+  - YandexMobileMetrica/Static (4.5.2):
+    - YandexMobileMetrica/Static/Core (= 4.5.2)
+    - YandexMobileMetrica/Static/Crashes (= 4.5.2)
+  - YandexMobileMetrica/Static/Core (4.5.2)
+  - YandexMobileMetrica/Static/Crashes (4.5.2):
+    - YandexMobileMetrica/Static/Core
   - Yoga (1.14.0)
 
 DEPENDENCIES:
@@ -1167,6 +1257,13 @@ DEPENDENCIES:
   - React-jsinspector (from `../node_modules/react-native/ReactCommon/jsinspector-modern`)
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
+  - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
+  - react-native-restart (from `../node_modules/react-native-restart`)
+  - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
+  - "react-native-slider (from `../node_modules/@react-native-community/slider`)"
+  - react-native-tracking-transparency (from `../node_modules/react-native-tracking-transparency`)
+  - react-native-webview (from `../node_modules/react-native-webview`)
+  - react-native-yandex-mobile-ads (from `../node_modules/react-native-yandex-mobile-ads`)
   - React-nativeconfig (from `../node_modules/react-native/ReactCommon`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-perflogger (from `../node_modules/react-native/ReactCommon/reactperflogger`)
@@ -1187,11 +1284,28 @@ DEPENDENCIES:
   - React-runtimescheduler (from `../node_modules/react-native/ReactCommon/react/renderer/runtimescheduler`)
   - React-utils (from `../node_modules/react-native/ReactCommon/react/utils`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
+  - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
+  - RNFS (from `../node_modules/react-native-fs`)
+  - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
+  - RNIap (from `../node_modules/react-native-iap`)
+  - RNReanimated (from `../node_modules/react-native-reanimated`)
+  - RNScreens (from `../node_modules/react-native-screens`)
+  - RNSVG (from `../node_modules/react-native-svg`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
 SPEC REPOS:
   trunk:
     - CocoaAsyncSocket
+    - DivKit
+    - DivKit_Base
+    - DivKit_BaseTiny
+    - DivKit_BaseUI
+    - DivKit_CommonCore
+    - DivKit_LayoutKit
+    - DivKit_LayoutKitInterface
+    - DivKit_Networking
+    - DivKit_Serialization
+    - DivKit_TemplatesSupport
     - Flipper
     - Flipper-Boost-iOSX
     - Flipper-DoubleConversion
@@ -1204,6 +1318,9 @@ SPEC REPOS:
     - libevent
     - OpenSSL-Universal
     - SocketRocket
+    - YandexMobileAds
+    - YandexMobileAdsInstream
+    - YandexMobileMetrica
 
 EXTERNAL SOURCES:
   boost:
@@ -1261,6 +1378,20 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/logger"
   React-Mapbuffer:
     :path: "../node_modules/react-native/ReactCommon"
+  react-native-netinfo:
+    :path: "../node_modules/@react-native-community/netinfo"
+  react-native-restart:
+    :path: "../node_modules/react-native-restart"
+  react-native-safe-area-context:
+    :path: "../node_modules/react-native-safe-area-context"
+  react-native-slider:
+    :path: "../node_modules/@react-native-community/slider"
+  react-native-tracking-transparency:
+    :path: "../node_modules/react-native-tracking-transparency"
+  react-native-webview:
+    :path: "../node_modules/react-native-webview"
+  react-native-yandex-mobile-ads:
+    :path: "../node_modules/react-native-yandex-mobile-ads"
   React-nativeconfig:
     :path: "../node_modules/react-native/ReactCommon"
   React-NativeModulesApple:
@@ -1301,12 +1432,36 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/react/utils"
   ReactCommon:
     :path: "../node_modules/react-native/ReactCommon"
+  RNCAsyncStorage:
+    :path: "../node_modules/@react-native-async-storage/async-storage"
+  RNFS:
+    :path: "../node_modules/react-native-fs"
+  RNGestureHandler:
+    :path: "../node_modules/react-native-gesture-handler"
+  RNIap:
+    :path: "../node_modules/react-native-iap"
+  RNReanimated:
+    :path: "../node_modules/react-native-reanimated"
+  RNScreens:
+    :path: "../node_modules/react-native-screens"
+  RNSVG:
+    :path: "../node_modules/react-native-svg"
   Yoga:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
   boost: 26fad476bfa736552bbfa698a06cc530475c1505
   CocoaAsyncSocket: 065fd1e645c7abab64f7a6a2007a48038fdc6a99
+  DivKit: cbc853a0e94022835e9307e604135aa25424e284
+  DivKit_Base: 538c8daf847099e700646beb2b447aee1a4818fe
+  DivKit_BaseTiny: 1fa9cd01974dc65430bf409fef57e9a9b4c0679f
+  DivKit_BaseUI: b0478ce03702bbda3aa76f4388c05249ef578878
+  DivKit_CommonCore: 4db51be9c1263c0f7b62e9fb864785f47ab57875
+  DivKit_LayoutKit: c7974256f128cb2bbd7d5d6711c95c63727c53b3
+  DivKit_LayoutKitInterface: 02b3436a7191ab1b517da54a5fe076f9f6977c31
+  DivKit_Networking: 400504b0212282bd047c6720f70abaf74f6e4dd8
+  DivKit_Serialization: 4a55e41a1f06ec211e696963403db53469a19337
+  DivKit_TemplatesSupport: 6cb0a79e7673caeb05686403bd2b9a34c3624571
   DoubleConversion: fea03f2699887d960129cc54bba7e52542b6f953
   FBLazyVector: 39ba45baf4e398618f8b3a4bb6ba8fcdb7fc2133
   FBReactNativeSpec: 20cfca68498e27879514790359289d1df2b52c56
@@ -1344,6 +1499,13 @@ SPEC CHECKSUMS:
   React-jsinspector: 9f6fb9ed9f03a0fb961ab8dc2e0e0ee0dc729e77
   React-logger: 008caec0d6a587abc1e71be21bfac5ba1662fe6a
   React-Mapbuffer: 58fe558faf52ecde6705376700f848d0293d1cef
+  react-native-netinfo: 8a7fd3f7130ef4ad2fb4276d5c9f8d3f28d2df3d
+  react-native-restart: 7595693413fe3ca15893702f2c8306c62a708162
+  react-native-safe-area-context: cd1169d797a2ef722a00bfc5af10748d5b6c94f9
+  react-native-slider: 7d387c7e8dd0b4c12bf49c975c8666435f082a33
+  react-native-tracking-transparency: 25ff1ff866e338c137c818bdec20526bb05ffcc1
+  react-native-webview: 88293a0f23eca8465c0433c023ec632930e644d0
+  react-native-yandex-mobile-ads: 06a95e6e6427f3829fe9d87188b08e75217789df
   React-nativeconfig: a063483672b8add47a4875b0281e202908ff6747
   React-NativeModulesApple: 169506a5fd708ab22811f76ee06a976595c367a1
   React-perflogger: b61e5db8e5167f5e70366e820766c492847c082e
@@ -1364,7 +1526,17 @@ SPEC CHECKSUMS:
   React-runtimescheduler: 77543c74df984ce56c09d49d427149c53784aaf6
   React-utils: 42708ea436853045ef1eaff29996813d9fbbe209
   ReactCommon: 851280fb976399ca1aabc74cc2c3612069ea70a2
+  RNCAsyncStorage: 618d03a5f52fbccb3d7010076bc54712844c18ef
+  RNFS: 4ac0f0ea233904cb798630b3c077808c06931688
+  RNGestureHandler: 61bfdfc05db9b79dd61f894dcd29d3dcc6db3c02
+  RNIap: 31bf0cfb84ec19a9e5cc6b53b88d159c5adb3c68
+  RNReanimated: 57f436e7aa3d277fbfed05e003230b43428157c0
+  RNScreens: b582cb834dc4133307562e930e8fa914b8c04ef2
+  RNSVG: ba3e7232f45e34b7b47e74472386cf4e1a676d0a
   SocketRocket: f32cd54efbe0f095c4d7594881e52619cfe80b17
+  YandexMobileAds: 1affe9f27183a569960e108a4b4cb6cbcfc8eaea
+  YandexMobileAdsInstream: 65f00989f45cf61cb359eeef42e0f1001f2501d1
+  YandexMobileMetrica: f5368ee93f286c793d73b58da00929babfc897c1
   Yoga: 44003f970aa541b79dfdd59cf236fda41bd5890f
 
 PODFILE CHECKSUM: 097a9e07ca33b8e7bd5da432e08abff27b045713

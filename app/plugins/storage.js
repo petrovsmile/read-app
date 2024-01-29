@@ -1,7 +1,7 @@
 class Storage {
   async get(key, default_value) {
     var value = await AsyncStorage.getItem(key);
-    if (value == undefined) {
+    if (value == undefined || value == null) {
       value = default_value;
     }
     return value;
@@ -9,8 +9,7 @@ class Storage {
 
   async set(key, value) {
     if(value == undefined){
-      console.log(key);
-      return false;
+      value = '';
     }
 
     var value = await AsyncStorage.setItem(key, value);
