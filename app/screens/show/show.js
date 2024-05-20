@@ -12,8 +12,6 @@ class Show extends React.Component {
   }
 
   async componentDidMount() {
-    //AppMetrica.reportEvent('openDetail',{book_name: book.name});
-
     root_home.setState({
       open_property: false,
     });
@@ -26,6 +24,10 @@ class Show extends React.Component {
         if (book.id == this.props.stack.route.params.book_id) {
           var have_file = await new Storage().get('have_file_' + book.id, 'false');
 
+          YandexMetrica.sendEvent('openDetail', {
+            book_name: book.name
+          });
+          
           this.setState({
             book: book,
             have_file: have_file == 'true'
@@ -76,12 +78,12 @@ class Show extends React.Component {
                       style={{ height: 20, width: 20, marginRight: 8 }}
                       source={require('./app/images/books/book-white.png')}
                     />
-                    <Text style={{ lineHeight: 20, fontSize: 12, color: '#FFF' }}>{this.props.home_stack_state.state.books_percents[this.props.stack.route.params.book_id]}%</Text>
+                    <Text style={{ lineHeight: 20, fontSize: 12, color: '#FFF' }}>{this.props.root.state.books_percents[this.props.stack.route.params.book_id]}%</Text>
                   </View>
                 </View>
 
                 <View style={{ height: 60, width: 60, borderRadius: 18, backgroundColor: '#FFF', flexDirection: 'row', overflow: 'hidden', marginRight: 15 }}>
-                  {this.props.root_state.has_internet == true || this.state.have_file == true ? (
+                  {this.props.root.state.has_internet == true || this.state.have_file == true ? (
                     <TouchableOpacity onPress={() => this.openBook(this.state.book.id)}>
                       <Image
                         style={{ height: 20, width: 20, margin: 20 }}
@@ -96,11 +98,11 @@ class Show extends React.Component {
                   )}
                 </View>
 
-                {this.state.have_file == false &&
+                {(this.props.root.state.has_subscription) && this.state.have_file == false &&
                   <View style={{ marginRight: 15 }}>
-                    {this.props.root_state.has_subscription == true ? (
+                    {this.props.root.state.has_subscription == true ? (
                       <React.Fragment>
-                        {this.props.root_state.has_internet == true &&
+                        {this.props.root.state.has_internet == true &&
                           <ButtonRead
                             set_have_file={() => this.set_have_file()}
                             book_id={this.state.book.id} color={this.state.book.color}
@@ -125,13 +127,13 @@ class Show extends React.Component {
 
             </View>
 
-            {this.state.have_file == false && this.props.root_state.has_internet == true &&
+            {this.state.have_file == false && this.props.root.state.has_internet == true &&
               <View style={{ padding: 15 }}>
                 <Text style={{ color: '#FFF', textAlign: 'center' }}>
                   Вы можете скачать книгу,{"\n"} чтобы читать ее без интернета
                 </Text>
 
-                {this.props.root_state.has_subscription == false &&
+                {this.props.root.state.has_subscription == false &&
                   <Text style={{ marginTop: 15, color: '#FFF', textAlign: 'center' }}>
                     Функция скачивания доступна{"\n"} только при наличии подписки
                   </Text>

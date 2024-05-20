@@ -3,25 +3,25 @@ class Profile extends React.Component {
     await new Storage().remove('current_user');
     await new Storage().set('has_subscription', 'false');
 
-    root_app.setState({
+    this.props.root.setState({
       current_user: false,
       has_subscription: false
     });
   }
-  
+
   render() {
     return (
       <SafeAreaView style={applicationStyles.save_area_view} >
-        {this.props.root_state.current_user == false ? (
+        {this.props.root.state.current_user == false ? (
           <Auth />
         ) : (
           <ScrollView>
             <View style={profileStyles.content}>
-              <Text style={profileStyles.title}>Основная информация</Text>
-              <UpdateProfile current_user={this.props.root_state.current_user} />
+              <Text style={[profileStyles.title, { marginTop: 15 }]}>Основная информация</Text>
+              <UpdateProfile current_user={this.props.root.state.current_user} />
 
               <Text style={profileStyles.title}>Смена пароля</Text>
-              <ChangePassword current_user={this.props.root_state.current_user} />
+              <ChangePassword current_user={this.props.root.state.current_user} />
 
               <Text style={profileStyles.title}>Выход из аккаунта</Text>
               <TouchableOpacity style={profileStyles.log_out_button} onPress={() => this.log_out()}>

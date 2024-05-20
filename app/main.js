@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Node } from 'react';
 import {
   SafeAreaView,
@@ -34,6 +34,8 @@ import moment from 'moment';
 import { NavigationContainer } from '@react-navigation/native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createStackNavigator } from '@react-navigation/stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+
 
 var RNFS = require('react-native-fs');
 
@@ -58,6 +60,10 @@ import { MobileAds, BannerView, InterstitialAdManager, RewardedAdManager } from 
 
 MobileAds.initialize({ userConsent: true, locationConsent: true });
 
+import { NativeModules } from 'react-native';
+const { YandexMetrica } = NativeModules;
+var Sound = require('react-native-sound');
+Sound.setCategory('Playback');
 
 // import {
 //   Appodeal,

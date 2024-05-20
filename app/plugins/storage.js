@@ -3,6 +3,7 @@ class Storage {
     var value = await AsyncStorage.getItem(key);
     if (value == undefined || value == null) {
       value = default_value;
+      this.set(key, default_value);
     }
     return value;
   }
@@ -12,7 +13,7 @@ class Storage {
       value = '';
     }
 
-    var value = await AsyncStorage.setItem(key, value);
+    var value = await AsyncStorage.setItem(key, value.toString());
     return value;
   }
 

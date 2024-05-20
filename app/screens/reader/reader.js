@@ -42,6 +42,8 @@ class Reader extends React.Component {
       auth_modal: false,
 
       bookmark: false,
+
+      word_in_dictionary: false
     };
 
     this.modalTranslateWordOriginal = null;
@@ -68,6 +70,10 @@ class Reader extends React.Component {
         this.book_name = book.name;
         this.book_name_en = book.name_en;
       }
+    });
+
+    YandexMetrica.sendEvent('openReader', {
+      book_name: this.book_name
     });
 
     var bookmark = await new Storage().get('bookmark_' + this.props.stack.route.params.book_id);
@@ -155,7 +161,7 @@ class Reader extends React.Component {
   async openPage(first_load) {
     var open_page = true;
 
-    if (this.have_file == false && this.props.root_state.has_internet == false) {
+    if (this.have_file == false && this.props.root.state.has_internet == false) {
       open_page = false;
       Alert.alert('Отсутствует подключение к интернету');
     }
@@ -236,7 +242,7 @@ class Reader extends React.Component {
   }
 
   async checkAd() {
-    if (this.props.root_state.has_internet == true && this.props.root_state.has_subscription == false) {
+    if (this.props.root.state.has_internet == true && this.props.root.state.has_subscription == false) {
       var time_ad = await new Storage().get('time_ad');
 
       if (time_ad == undefined) {
@@ -255,7 +261,11 @@ class Reader extends React.Component {
       if (range_time < 30) {
         this.openPage(false);
       } else {
-        this.showAdInfo();
+        if (root_app.show_subsription == true) {
+          this.showAdInfo();
+        } else {
+          this.showAd();
+        }
       }
     } else {
       this.openPage(false);
@@ -263,7 +273,7 @@ class Reader extends React.Component {
   }
 
   showAdInfo() {
-    //AppMetrica.reportEvent('showAdInfo');
+    YandexMetrica.sendEvent('showAdInfo', { platform: Platform.OS });
 
     this.setState({
       showAdInfo: true,
@@ -350,7 +360,7 @@ class Reader extends React.Component {
 
   async onSlidingComplete() {
 
-    //AppMetrica.reportEvent('slidingPage');
+    YandexMetrica.sendEvent('slidingPage', { platform: Platform.OS });
 
     this.checkAd();
   }
@@ -382,14 +392,12 @@ class Reader extends React.Component {
 
     await new Storage().set('percent_' + this.props.stack.route.params.book_id, percent.toString());
 
-    if (this.props.home_stack_state != undefined) {
-      var percents = this.props.home_stack_state.state.books_percents;
-      percents[this.props.stack.route.params.book_id] = percent;
+    var percents = this.props.root.state.books_percents;
+    percents[this.props.stack.route.params.book_id] = percent;
 
-      this.props.home_stack_state.setState({
-        books_percents: percents,
-      });
-    }
+    this.props.root.setState({
+      books_percents: percents,
+    });
 
     this.setState({
       percent: percent,
@@ -405,16 +413,20 @@ class Reader extends React.Component {
 
   openAuthModal() {
     this.setState({
+      showTranslateWord: false,
       auth_modal: true,
     });
   }
 
-  openTranslateWord(original, translate, transcription) {
+  async openTranslateWord(original, translate, transcription) {
     this.modalTranslateWordOriginal = original;
     this.modalTranslateWordTranscription = transcription;
     this.modalTranslateWordTranslate = translate;
 
+    var word = await new Storage().get('word_' + original);
+
     this.setState({
+      word_in_dictionary: word != undefined,
       showTranslateWord: true,
     });
   }
@@ -428,7 +440,7 @@ class Reader extends React.Component {
 
   openThemeSetting() {
 
-    //AppMetrica.reportEvent('openThemeSetting',{open: !this.state.showThemeSetting});
+    YandexMetrica.sendEvent('openThemeSetting', { open: !this.state.showThemeSetting });
 
     this.setState({
       showThemeSetting: !this.state.showThemeSetting,
@@ -444,7 +456,7 @@ class Reader extends React.Component {
         settings = JSON.parse(settings);
         settings['fontFamily'] = fontFamily;
         new Storage().set('themeReaderSettings', JSON.stringify(settings)).then(() => {
-          //AppMetrica.reportEvent('changeProperty',{fontFamily: fontFamily});
+          YandexMetrica.sendEvent('changeProperty', { fontFamily: fontFamily });
           this.setState({
             fontFamily: fontFamily,
             show_list: true,
@@ -466,7 +478,7 @@ class Reader extends React.Component {
         settings['textColorTheme'] = textColor;
         settings['secondColorTheme'] = secondColor;
 
-        //AppMetrica.reportEvent('changeProperty',{colorTheme: backgroundColor});
+        YandexMetrica.sendEvent('changeProperty', { colorTheme: backgroundColor });
 
         new Storage().set('themeReaderSettings', JSON.stringify(settings)).then(() => {
           this.setState({
@@ -505,7 +517,7 @@ class Reader extends React.Component {
 
         settings['textAlign'] = nowTextAlign;
 
-        //AppMetrica.reportEvent('changeProperty',{textAlign: nowTextAlign});
+        YandexMetrica.sendEvent('changeProperty', { textAlign: nowTextAlign });
 
         new Storage().set('themeReaderSettings', JSON.stringify(settings)).then(() => {
 
@@ -530,7 +542,7 @@ class Reader extends React.Component {
         var newFontSize = this.state.fontSize - 2;
       }
 
-      //AppMetrica.reportEvent('changeProperty',{fontSize: newFontSize});
+      YandexMetrica.sendEvent('changeProperty', { fontSize: newFontSize });
 
       if (newFontSize == 14) {
         var translate_icon_size = 18;
@@ -612,6 +624,12 @@ class Reader extends React.Component {
     }
   }
 
+  setWordInDictionary(word_in_dictionary) {
+    this.setState({
+      word_in_dictionary: word_in_dictionary
+    });
+  }
+
   render() {
     return (
       <React.Fragment>
@@ -649,7 +667,7 @@ class Reader extends React.Component {
             <Modal
               animationType="slide"
               presentationStyle={'overFullScreen'}
-              visible={this.state.auth_modal && this.props.root_state.current_user == false}>
+              visible={this.state.auth_modal && this.props.root.state.current_user == false}>
               <Auth
                 method={this.state.auth_method}
                 modal={true}
@@ -664,7 +682,7 @@ class Reader extends React.Component {
               </View>
             }
 
-            {(this.state.showAdInfo && this.props.root_state.has_subscription == false) &&
+            {(this.state.showAdInfo && this.props.root.state.has_subscription == false) &&
               <TouchableOpacity style={{ position: 'absolute', left: 0, bottom: 0, width: '100%', height: '120%', backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 10 }} onPress={() => this.closeAdInfo()}>
                 <TouchableWithoutFeedback>
                   <View style={{
@@ -685,7 +703,7 @@ class Reader extends React.Component {
                         <Text style={{ color: '#FFF', textAlign: 'center', lineHeight: 50, fontSize: 16 }}>Смотреть рекламу</Text>
                       </TouchableOpacity>
 
-                      <TouchableOpacity onPress={() => this.props.drawer.navigation.navigate('Subscription')} style={{ marginTop: 15, marginBottom: 30, backgroundColor: '#f05458', height: 50, borderRadius: 10 }}>
+                      <TouchableOpacity onPress={() => this.props.tabs.navigation.navigate('Subscription')} style={{ marginTop: 15, marginBottom: 30, backgroundColor: '#f05458', height: 50, borderRadius: 10 }}>
                         <Text style={{ color: '#FFF', textAlign: 'center', lineHeight: 50, fontSize: 16 }}>Приобрести PRO-версию</Text>
                       </TouchableOpacity>
                     </View>
@@ -694,25 +712,30 @@ class Reader extends React.Component {
               </TouchableOpacity>
             }
 
-            <ModalNoAd visible={this.state.showNoAd} drawer={this.props.drawer} close={() => this.closeNoAdInfo()} />
+            <ModalNoAd visible={this.state.showNoAd} drawer={this.props.tabs} close={() => this.closeNoAdInfo()} />
 
             <ModalFastLearning
               visible={this.state.showTraining}
               close={() => this.closeTraining()} />
 
             <ModalTranslateSentence
-              has_subscription={this.props.root_state.has_subscription}
+              has_subscription={this.props.root.state.has_subscription}
               translate={this.modalTranslateSentence}
               visible={this.state.showTranslateSentence}
               close={() => this.closeTranslateSentence()} />
 
             <ModalTranslateWord
-              has_subscription={this.props.root_state.has_subscription}
+              current_user={this.props.root.state.current_user}
+              has_subscription={this.props.root.state.has_subscription}
               original={this.modalTranslateWordOriginal}
               transcription={this.modalTranslateWordTranscription}
               translate={this.modalTranslateWordTranslate}
+              word_in_dictionary={this.state.word_in_dictionary}
               visible={this.state.showTranslateWord}
-              close={() => this.closeTranslateWord()} />
+              close={() => this.closeTranslateWord()}
+              openAuthModal={() => this.openAuthModal()}
+              setWordInDictionary={(flag) => this.setWordInDictionary(flag)}
+            />
 
             <View style={{
               height: 40,
@@ -830,7 +853,7 @@ class Reader extends React.Component {
                   {this.state.paragraphs.map((paragraph, index) =>
                     <React.Fragment key={index}>
                       {
-                        this.props.root_state.has_subscription == false && (index == 3 || index == 7) &&
+                        this.props.root.state.has_subscription == false && (index == 3 || index == 7) &&
                         <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', height: 250, marginTop: 20 }}>
                           <BannerView
                             adUnitId={'R-M-1281415-12'}
@@ -845,7 +868,7 @@ class Reader extends React.Component {
                           openTranslateWord={(o, tr, ts) => this.openTranslateWord(o, tr, ts)}
                           openAuthModal={() => this.openAuthModal()}
                           setBookmark={(value) => this.setBookmark(value)}
-                          current_user={this.props.root_state.current_user}
+                          current_user={this.props.root.state.current_user}
                           page={this.state.page}
                           book_name={this.book_name}
                           book_name_en={this.book_name_en}

@@ -1,7 +1,7 @@
-const CURRENT_IOS_VERSION = '1.1.3'
-const CURRENT_ANDROID_VERSION = '1.1.3'
+const CURRENT_IOS_VERSION = '1.1.5'
+const CURRENT_ANDROID_VERSION = '1.1.7'
 const BOOKS_FILENAME = 'books_v1.json'
-const POLICY_VERSION = 'v5'
+const POLICY_VERSION = 'v6'
 const HOST="https://read-en.ru"
 //const HOST="https://stage.read-en.ru"
 //const HOST = "http://localhost:3000"; 

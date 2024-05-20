@@ -10,19 +10,19 @@ class RootApp extends React.Component {
       subscription_info: {},
       current_user: false,
       confirm_conditions: true,
+      books_percents: {},
 
       error_show: false,
       error_title: '',
-      error_description: ''
+      error_description: '',
+      type_payment: Platform.OS === 'ios' ? 'by_store' : 'by_yoo_kassa'
     }
-
-    this.type_payment = Platform.OS === 'ios' ? 'by_store' : 'by_yoo_kassa';
   }
 
   async componentDidMount() {
 
     RNIap.setup({ storekitMode: 'STOREKIT_HYBRID_MODE' })
-    
+
     await RNIap.initConnection();
     await RNIap.getSubscriptions({ skus: ['read_1_month', 'read_6_month', 'read_1_year'] });
     await RNIap.getProducts({ skus: ['read_forever'] });
@@ -40,11 +40,6 @@ class RootApp extends React.Component {
       confirm_conditions: confirm_conditions == 'true'
     });
 
-    if (await new Storage().get('openAppFirst') == undefined) {
-      //new Storage().set('openAppFirst', 'true');
-      //AppMetrica.reportEvent('openAppFirst');
-    }
-
     this.checkSubscription();
 
     NetInfo.addEventListener(state => {
@@ -52,9 +47,38 @@ class RootApp extends React.Component {
         has_internet: state.isConnected,
       });
     });
+     
+    if (await new Storage().get('openAppFirst') == undefined) {
+      new Storage().set('openAppFirst', 'true');
+
+      YandexMetrica.sendEvent('openAppFirst', {
+        platform: Platform.OS,
+      });
+    }else{
+      this.check_location();
+
+      YandexMetrica.sendEvent('openAppNotFirst', {
+        platform: Platform.OS,
+      });
+    }
   }
 
-  async sync_subscription_with_server(user_id, subscription_id, end_date){
+  async check_location() {
+    var response = await new Request('/api/v1/users/context', {
+    }, {
+      do_not_show_error: false
+    }).get();
+
+    if (response != false) {
+      if (response['country'] == 'RU') {
+        this.setState({
+          type_payment: 'by_yoo_kassa'
+        });
+      }
+    }
+  }
+
+  async sync_subscription_with_server(user_id, subscription_id, end_date) {
     await new Request('/api/v1/payments/sync_subscription', {
       user_id: user_id,
       subscription_id: subscription_id,
@@ -63,8 +87,6 @@ class RootApp extends React.Component {
   }
 
   async checkSubscription() {
-    //await new Storage().set('has_subscription', 'false');
-    
     var has_subscription = await new Storage().get('has_subscription', 'false');
 
     var subscription_info = await new Storage().get('subscription_info');
@@ -78,9 +100,9 @@ class RootApp extends React.Component {
       has_subscription: has_subscription == 'true',
       subscription_info: subscription_info
     });
- 
+
     if (this.type_payment == 'by_store') {
-      var purchases = await RNIap.getPurchaseHistory({skus: ['read_1_month', 'read_6_month', 'read_1_year', 'read_forever']});
+      var purchases = await RNIap.getPurchaseHistory({ skus: ['read_1_month', 'read_6_month', 'read_1_year', 'read_forever'] });
       if (purchases.length != 0) {
         purchases.sort(function (a, b) {
           var keyA = new Date(a.transactionDate),
@@ -120,20 +142,20 @@ class RootApp extends React.Component {
 
           await new Storage().set('has_subscription', 'true');
           await new Storage().set('subscription_info', JSON.stringify(subscription_info));
-          
+
           await this.setState({
             subscription_info: subscription_info,
             has_subscription: true,
           });
 
-          if (this.state.current_user){
+          if (this.state.current_user) {
             this.sync_subscription_with_server(
               this.state.current_user.id,
               subscription_id,
               end_date.format('YYYY-MM-DD HH:MM')
             );
           }
-        }else{
+        } else {
           await new Storage().set('has_subscription', 'false');
 
           await this.setState({
@@ -154,6 +176,7 @@ class RootApp extends React.Component {
           subscription_info: response,
           has_subscription: true,
         });
+        response['subscription_id'] = response['subscription']['id'];
         await new Storage().set('has_subscription', 'true');
         await new Storage().set('subscription_info', JSON.stringify(response));
       }
@@ -216,12 +239,13 @@ class RootApp extends React.Component {
   }
 
   render() {
-    const Drawer = createDrawerNavigator();
+
+
+    const Stack = createStackNavigator();
 
     return (
       <React.Fragment>
         <TargetVersion />
-        
         {this.state.confirm_conditions == false ? (
           <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'center', padding: 15 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
@@ -232,13 +256,17 @@ class RootApp extends React.Component {
             </View>
             <View>
               <Text style={{ textAlign: 'center' }}>Продолжая пользоваться приложением,</Text>
-              <Text style={{ textAlign: 'center' }}>вы принимаете условия</Text>
+
+              <Text style={{ textAlign: 'center' }}>вы принимате, что</Text>
+              <Text style={{ textAlign: 'center' }}>приложение собирает данные</Text>
+              <Text style={{ textAlign: 'center' }}>о приблизительном местоположении</Text>
+              <Text style={{ textAlign: 'center' }}>и принимаете условия</Text>
             </View>
             <TouchableOpacity onPress={() => Linking.openURL("https://read-en.ru/apps_policy")}>
               <Text style={{ color: app_theme_colors.red, textAlign: 'center' }}>Политики конфидициальности</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => Linking.openURL("https://read-en.ru/apps_terms_and_conditions")} style={{ marginBottom: 15 }}>
-              <Text style={{ color: app_theme_colors.red, textAlign: 'center' }}>Пользовательского соглашения</Text>
+            <TouchableOpacity onPress={() => Linking.openURL("https://read-en.ru/apps_terms_and_conditions")}>
+              <Text style={{ color: app_theme_colors.red, textAlign: 'center', marginBottom: 15 }}>Пользовательского соглашения</Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => this.confirm_conditions()} style={profileStyles.form_button}>
@@ -267,51 +295,44 @@ class RootApp extends React.Component {
               </TouchableOpacity>
             }
             <NavigationContainer>
-              <Drawer.Navigator initialRouteName="Books"
-                screenOptions={() => ({
-                  drawerActiveBackgroundColor: '#f05458',
-                  drawerActiveTintColor: '#FFF',
-                  header: ({ navigation, route, options }) => {
-                    const title = options.title;
-
-                    return (<Header navigation={navigation} title={title} />);
-                  }
-                })}>
-                <Drawer.Screen name="Books"
-                  options={() => ({
-                    title: 'Книги',
+              <Stack.Navigator initialRouteName="Home">
+                <Stack.Screen name="Home" options={() => ({ headerShown: false })}>
+                  {(stack) => (
+                    <TabStack root={this} stack={stack} />
+                  )}
+                </Stack.Screen>
+                <Stack.Screen name="Show" options={({ navigation, route }) => ({
+                  title: false,
+                  headerStyle: {
+                    backgroundColor: route.params.color,
+                    borderColor: 'transparent',
+                    shadowColor: 'transparent'
+                  },
+                  headerBackTitle: 'Список книг',
+                  headerBackTitleStyle: {
+                    color: '#FFF',
+                  },
+                  headerBackTitleVisible: Platform.OS === 'ios',
+                  headerBackImage: () => (
+                    <ImageBackground style={{ width: 30, height: 30, marginLeft: 10 }}
+                      resizeMode='cover'
+                      source={require('./app/images/header/arrow-left-white.png')} />
+                  )
+                }
+                )}>
+                  {(stack) => (
+                    <Show stack={stack} root={this} />
+                  )}
+                </Stack.Screen>
+                <Stack.Screen name="Reader"
+                  options={({ navigation, route }) => ({
                     headerShown: false
                   })}>
-                  {(drawer) => (
-                    <HomeStack drawer={drawer} root_state={this.state} />
+                  {(stack) => (
+                    <Reader home_stack_state={this} root={this} stack={stack} />
                   )}
-                </Drawer.Screen>
-                <Drawer.Screen name="Bookmarks"
-                  options={() => ({
-                    title: 'Закладки',
-                    headerShown: false
-                  })}>
-                  {(drawer) => (
-                    <BookmarkStack drawer={drawer} root_state={this.state} />
-                  )}
-                </Drawer.Screen>
-                <Drawer.Screen name="Subscription"
-                  options={() => ({
-                    title: 'PRO-доступ',
-                  })}>
-                  {(drawer) => (
-                    <Subscription drawer={drawer} root={this} />
-                  )}
-                </Drawer.Screen>
-                <Drawer.Screen name="Profile"
-                  options={() => ({
-                    title: 'Профиль',
-                  })}>
-                  {() => (
-                    <Profile root_state={this.state} />
-                  )}
-                </Drawer.Screen>
-              </Drawer.Navigator>
+                </Stack.Screen>
+              </Stack.Navigator>
             </NavigationContainer>
           </React.Fragment>
         )

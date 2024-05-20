@@ -23,7 +23,7 @@ class Bookmarks extends React.Component {
   }
 
   async getBookmarks() {
-    if (this.props.root_state.current_user != false) {
+    if (this.props.root.state.current_user != false) {
       await this.setState({
         do_not_find: false,
         bookmarks: [],
@@ -42,7 +42,7 @@ class Bookmarks extends React.Component {
 
   async getBookmarksFromServer() {
     var server_bookmarks = await new Request('/api/v1/bookmarks', {
-      user_id: this.props.root_state.current_user.id
+      user_id: this.props.root.state.current_user.id
     }, {
       do_not_show_error: true
     }).get();
@@ -166,7 +166,7 @@ class Bookmarks extends React.Component {
 
     await new Request('/api/v1/bookmarks', {
       book_id: data.book_id,
-      user_id: this.props.root_state.current_user.id
+      user_id: this.props.root.state.current_user.id
     }, {
       desciption_error: 'Закладка удалена только с этого устройства.'
     }).delete();
@@ -185,27 +185,14 @@ class Bookmarks extends React.Component {
     return (
       <SafeAreaView style={applicationStyles.save_area_view}>
 
-        <View style={homeStyles.header}>
-
-          <TouchableOpacity onPress={() => this.props.stack.navigation.openDrawer()}>
-            <Image style={applicationStyles.header_icon_image} source={require('./app/images/header/menu.png')} />
-          </TouchableOpacity>
-
-          <Text style={homeStyles.header_title}>
-            Закладки
-          </Text>
-
-          <View style={homeStyles.header_empty_block}></View>
-        </View>
-
         <Modal
           animationType="slide"
           presentationStyle={'overFullScreen'}
-          visible={this.state.auth_modal && this.props.root_state.current_user == false}>
+          visible={this.state.auth_modal && this.props.root.state.current_user == false}>
           <Auth method={this.state.auth_method} modal={true} close={() => this.setState({ auth_modal: false })} />
         </Modal>
 
-        {this.props.root_state.current_user == false ? (
+        {this.props.root.state.current_user == false ? (
           <View style={bookmarksStyles.auth_content}>
             <Text style={bookmarksStyles.auth_into}>
               Для того чтобы воспользоваться закладками,

@@ -30,6 +30,10 @@ class Home extends React.Component {
     await this.setState({ show_only_loaded: show_only_loaded === 'true' });
 
     this.getBooks();
+
+    this.props.stack.navigation.navigate('Reader', {
+      book_id: 1
+    });   
   } 
 
   async getBooks() {
@@ -148,7 +152,7 @@ class Home extends React.Component {
       percents[book.id] = book.percent;
     });
 
-    await this.props.home_stack_state.setState({
+    await this.props.root.setState({
       books_percents: percents
     });
 
@@ -169,7 +173,7 @@ class Home extends React.Component {
 
   setLevel(level) {
 
-    //AppMetrica.reportEvent('setLevel',{level: level}); 
+    YandexMetrica.sendEvent('setLevel',{level: level}); 
 
     this.setState({
       level: level,
@@ -179,7 +183,7 @@ class Home extends React.Component {
   }
   openProperty() {
 
-    //AppMetrica.reportEvent('openProperty',{show: !this.state.open_property});
+    YandexMetrica.sendEvent('openProperty',{show: !this.state.open_property});
 
     this.setState({
       open_property: !this.state.open_property,
@@ -188,7 +192,7 @@ class Home extends React.Component {
 
   setPropertyShowRead() {
 
-    //AppMetrica.reportEvent('notShowRead',{value: !this.state.not_show_read}); 
+    YandexMetrica.sendEvent('notShowRead',{value: !this.state.not_show_read}); 
 
     AsyncStorage.setItem('not_show_read', (!this.state.not_show_read).toString()).then(() => {
       this.setState({
@@ -202,7 +206,7 @@ class Home extends React.Component {
   }
   setPropertySortNewBook() {
 
-    //AppMetrica.reportEvent('sortNewBook',{value: !this.state.sort_new_book}); 
+    YandexMetrica.sendEvent('sortNewBook',{value: !this.state.sort_new_book}); 
 
     AsyncStorage.setItem('sort_new_book', (!this.state.sort_new_book).toString()).then(() => {
       this.setState({
@@ -215,7 +219,7 @@ class Home extends React.Component {
 
   setPropertyShowOnlyLoaded() {
 
-    //AppMetrica.reportEvent('showOnlyLoaded',{value: !this.state.show_only_loaded}); 
+    YandexMetrica.sendEvent('showOnlyLoaded',{value: !this.state.show_only_loaded}); 
 
     AsyncStorage.setItem('show_only_loaded', (!this.state.show_only_loaded).toString()).then(() => {
       this.setState({
@@ -252,17 +256,15 @@ class Home extends React.Component {
       <SafeAreaView style={applicationStyles.save_area_view}>
         <View style={homeStyles.header}>
 
-          <TouchableOpacity onPress={() => this.props.stack.navigation.openDrawer()}>
-            <Image style={applicationStyles.header_icon_image} source={require('./app/images/header/menu.png')} />
-          </TouchableOpacity>
+          <View style={homeStyles.header_empty_block}/>
 
           <View style={homeStyles.logo}>
             <Text style={homeStyles.logo_text}>Read</Text>
             <Text style={homeStyles.logo_dot}>.</Text>
           </View>
 
-          {this.props.home_stack_state.props.root_state.has_subscription == false ? (
-            <TouchableOpacity onPress={() => this.props.drawer.navigation.navigate('Subscription')}>
+          {(this.props.root.state.has_subscription == false ) ? (
+            <TouchableOpacity onPress={() => this.props.tabs.navigation.navigate('Subscription')}>
               <Image style={{ width: 30, height: 30, marginTop: 2.5 }} source={require('./app/images/header/ads.jpg')} />
             </TouchableOpacity>
           ) : (
@@ -376,7 +378,7 @@ class Home extends React.Component {
               contentContainerStyle={{ paddingBottom: 100 }}
               data={this.state.books_filtered}
               renderItem={(book) => <Book
-                books_percents={this.props.home_stack_state.state.books_percents}
+                books_percents={this.props.root.state.books_percents}
                 book={book}
                 onPress={(book_id, color) => this.props.stack.navigation.navigate('Show', {
                   book_id: book_id,

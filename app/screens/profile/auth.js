@@ -73,9 +73,11 @@ class Auth extends React.Component {
 
         root_app.setState({
           current_user: response
-        });
+        }); 
 
         await new Storage().set('current_user', JSON.stringify(response));
+
+        root_app.checkSubscription();
       }
     }
 
@@ -162,7 +164,7 @@ class Auth extends React.Component {
             {this.props.bookmark_info != undefined &&
               <React.Fragment>
                 <Text style={bookmarksStyles.auth_into}>
-                  Для того чтобы воспользоваться закладками,
+                  Для того чтобы воспользоваться закладками или словарем,
                   необходимо
                   <Text style={{ color: '#f05458' }}> авторизоваться </Text>
                   или

@@ -6,7 +6,7 @@ const profileStyles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 20,
     fontWeight: 'bold',
-    marginTop: 15,
+    marginTop: 40,
   },
   authorization_form_tabs: {
     height: 40,
