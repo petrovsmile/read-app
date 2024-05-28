@@ -60,7 +60,18 @@ class Bookmarks extends React.Component {
           }
         }));
         if (has_bookmark == false) {
-          ar_delete_keys.push('bookmark_' + storage_bookmark.book_id);
+          if (storage_bookmark.offline == true) {
+            await new Request('/api/v1/bookmarks', {
+              book_id: storage_bookmark.book_id,
+              user_id: storage_bookmark.user_id,
+              page: storage_bookmark.page,
+              paragraph: storage_bookmark.paragraph
+            }, {
+              do_not_show_error: true
+            }).post();
+          } else {
+            ar_delete_keys.push('bookmark_' + storage_bookmark.book_id);
+          }
         }
       }));
 

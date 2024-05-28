@@ -79,7 +79,16 @@ class Dictionary extends React.Component {
           }
         }));
         if (has_word == false) {
-          ar_delete_keys.push('word_' + storage_word.original);
+          if (storage_word.offline == true) {
+            await new Request('/api/v1/dictionary/words', {
+              original: storage_word.original,
+              user_id: this.props.root.state.current_user.id
+            }, {
+              do_not_show_error: true
+            }).post();
+          } else {
+            ar_delete_keys.push('word_' + storage_word.original);
+          }
         }
       }));
 

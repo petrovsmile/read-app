@@ -732,6 +732,7 @@ class Reader extends React.Component {
               translate={this.modalTranslateWordTranslate}
               word_in_dictionary={this.state.word_in_dictionary}
               visible={this.state.showTranslateWord}
+              has_internet={this.props.root.state.has_internet}
               close={() => this.closeTranslateWord()}
               openAuthModal={() => this.openAuthModal()}
               setWordInDictionary={(flag) => this.setWordInDictionary(flag)}
@@ -874,6 +875,7 @@ class Reader extends React.Component {
                           book_name_en={this.book_name_en}
                           book_id={this.props.stack.route.params.book_id}
                           percent={this.state.percent}
+                          has_internet={this.props.root.state.has_internet}
                         />
                       </View>
                     </React.Fragment>

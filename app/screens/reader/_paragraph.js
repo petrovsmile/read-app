@@ -44,7 +44,8 @@ class Paragraph extends React.PureComponent {
           book_id: this.props.book_id,
           book_name: this.props.book_name,
           page: this.props.page,
-          paragraph: this.props.data['name']
+          paragraph: this.props.data['name'],
+          offline: !this.props.has_internet
         }));
         await this.addBookmarkToKeys('bookmark_' + this.props.book_id);
 

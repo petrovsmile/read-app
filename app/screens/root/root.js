@@ -20,12 +20,13 @@ class RootApp extends React.Component {
   }
 
   async componentDidMount() {
+    if (Platform.OS == 'ios') {
+        RNIap.setup({ storekitMode: 'STOREKIT_HYBRID_MODE' })
 
-    RNIap.setup({ storekitMode: 'STOREKIT_HYBRID_MODE' })
-
-    await RNIap.initConnection();
-    await RNIap.getSubscriptions({ skus: ['read_1_month', 'read_6_month', 'read_1_year'] });
-    await RNIap.getProducts({ skus: ['read_forever'] });
+        await RNIap.initConnection();
+        await RNIap.getSubscriptions({ skus: ['read_1_month', 'read_6_month', 'read_1_year'] });
+        await RNIap.getProducts({ skus: ['read_forever'] });
+    }
 
     var current_user = await new Storage().get('current_user');
 

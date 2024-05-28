@@ -9,7 +9,7 @@ class Storage {
   }
 
   async set(key, value) {
-    if(value == undefined){
+    if (value == undefined) {
       value = '';
     }
 

@@ -107,7 +107,8 @@ class ModalTranslateWord extends React.Component {
       await new Storage().set('word_' + this.props.original, JSON.stringify({
         original: this.props.original,
         transcription: this.props.transcription,
-        translate: this.props.translate
+        translate: this.props.translate,
+        offline: !this.props.has_internet
       }));
       await this.addWordToKeys('word_' + this.props.original);
 
@@ -275,15 +276,15 @@ class ModalTranslateWord extends React.Component {
                   </React.Fragment>
                 ) : (
                   <React.Fragment>
-                    <View style={{ flexDirection: 'row', width: 230, margin: 10, marginTop: 10, alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row', height: 32, width: 230, margin: 10, marginTop: 10, alignItems: 'center' }}>
                       {this.state.count_words < 30 ? (
                         <TouchableOpacity onPress={() => this.addWordToDictionary()}>
-                          <View style={{ flex: 1, width: 198, borderWidth: 1, borderColor: '#ddd', height: 32, flexDirection: 'column', justifyContent: 'center', borderRadius: 5 }}>
+                          <View style={{ flex: 1, width: this.props.has_subscription ? 230 : 198, borderWidth: 1, borderColor: '#ddd', height: 32, flexDirection: 'column', justifyContent: 'center', borderRadius: 5 }}>
                             <Text style={{ color: '#444', lineHeight: 32, textAlign: 'center' }}>Добавить в словарь</Text>
                           </View>
                         </TouchableOpacity>
                       ) : (
-                        <View style={{ flex: 1, width: 198, height: 34, flexDirection: 'column', justifyContent: 'center', borderRadius: 5 }}>
+                        <View style={{ flex: 1, width: this.props.has_subscription ? 230 : 198, height: 34, flexDirection: 'column', justifyContent: 'center', borderRadius: 5 }}>
                           <Text style={{ color: '#444', lineHeight: 34, textAlign: 'center' }}>Вы исчерпали лимит</Text>
                         </View>
                       )}
