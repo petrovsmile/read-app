@@ -65,6 +65,9 @@ const { YandexMetrica } = NativeModules;
 var Sound = require('react-native-sound');
 Sound.setCategory('Playback');
 
+import * as StoreReview from 'react-native-store-review';
+
+
 // import {
 //   Appodeal,
 //   AppodealSdkEvent,

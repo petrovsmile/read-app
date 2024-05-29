@@ -61,11 +61,10 @@ class ModalTranslateWord extends React.Component {
       const sound = new Sound(url, '', error => {
         if (error) {
           root_app.showError('Ошибка воспроизвездения');
+          this.setState({
+            voiceover_playing: false
+          });
         }
-
-        this.setState({
-          voiceover_playing: false
-        });
 
         sound.play((success) => {
           if (success) {
@@ -87,9 +86,8 @@ class ModalTranslateWord extends React.Component {
                 words: new_words
               });
             }
-          } else {
-            root_app.showError('Ошибка воспроизвездения');
           }
+
           this.setState({
             voiceover_playing: false
           });
@@ -113,10 +111,6 @@ class ModalTranslateWord extends React.Component {
       await this.addWordToKeys('word_' + this.props.original);
 
       this.props.setWordInDictionary(true);
-
-      this.setState({
-        count_words: this.state.count_words + 1
-      });
 
       this.setState({
         count_words: this.state.count_words + 1
@@ -234,12 +228,12 @@ class ModalTranslateWord extends React.Component {
                     </React.Fragment>
                   </React.Fragment>
                 ) : (
-                  <TouchableOpacity onPress={() => Alert.alert('Нет подключения к интернету!')}>
+                  <TouchableWithoutFeedback onPress={() => Alert.alert('Нет подключения к интернету!')}>
                     <View style={{ position: 'absolute', left: 10, top: 10, width: 48, height: 34 }}>
                       <Image style={{ width: 24, height: 24 }}
                         source={require('./app/images/reader/voiceover-limited.png')} />
                     </View>
-                  </TouchableOpacity>
+                  </TouchableWithoutFeedback>
                 )}
 
                 <View style={{ marginTop: 10 }}>
@@ -272,7 +266,6 @@ class ModalTranslateWord extends React.Component {
                         <Text style={{ color: '#444', lineHeight: 32, textAlign: 'center' }}>Удалить из словаря</Text>
                       </View>
                     </TouchableOpacity>
-
                   </React.Fragment>
                 ) : (
                   <React.Fragment>

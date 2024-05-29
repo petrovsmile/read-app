@@ -10,7 +10,7 @@ class Reader extends React.Component {
 
     this.state = {
       current_page: null,
-      page: null,
+      page: '',
       pages: null,
       percent: 0,
 
@@ -663,7 +663,6 @@ class Reader extends React.Component {
         ) : (
 
           <SafeAreaView style={{ flex: 1, backgroundColor: this.state.backgroundColorTheme }}>
-
             <Modal
               animationType="slide"
               presentationStyle={'overFullScreen'}

@@ -31,10 +31,10 @@ class Home extends React.Component {
 
     this.getBooks();
 
-    this.props.stack.navigation.navigate('Reader', {
-      book_id: 1
-    });   
-  } 
+    // this.props.stack.navigation.navigate('Reader', {
+    //   book_id: 1
+    // });
+  }
 
   async getBooks() {
     await this.setState({
@@ -79,7 +79,7 @@ class Home extends React.Component {
     });
 
     var result = [];
-    
+
     for (const i in this.state.books) {
       var book = this.state.books[i];
 
@@ -159,7 +159,35 @@ class Home extends React.Component {
     this.setState({
       books_filtered: result,
       do_not_find: result.length == 0,
+    }, function () {
+      this.showReview();
     });
+  }
+
+  async showReview() {
+
+    var review_showed = await new Storage().get('review_showed', 'false');
+
+    if (review_showed == 'false') {
+      var time_show_review = await new Storage().get('time_show_review');
+
+      if (time_show_review == undefined) {
+        time_show_review = moment();
+        await new Storage().set('time_show_review', moment().format());
+      } else {
+        time_show_review = moment(time_show_review);
+      }
+
+      var now_time = moment();
+
+      var range_time = (now_time - time_show_review) / 1000 / 60;
+
+      if (range_time > 1) { //7200
+        YandexMetrica.sendEvent('reviewShow', { show: true });
+        await new Storage().set('review_showed', 'true');
+        StoreReview.requestReview();
+      }
+    }
   }
 
   goToSite() {
@@ -173,7 +201,7 @@ class Home extends React.Component {
 
   setLevel(level) {
 
-    YandexMetrica.sendEvent('setLevel',{level: level}); 
+    YandexMetrica.sendEvent('setLevel', { level: level });
 
     this.setState({
       level: level,
@@ -183,7 +211,7 @@ class Home extends React.Component {
   }
   openProperty() {
 
-    YandexMetrica.sendEvent('openProperty',{show: !this.state.open_property});
+    YandexMetrica.sendEvent('openProperty', { show: !this.state.open_property });
 
     this.setState({
       open_property: !this.state.open_property,
@@ -192,7 +220,7 @@ class Home extends React.Component {
 
   setPropertyShowRead() {
 
-    YandexMetrica.sendEvent('notShowRead',{value: !this.state.not_show_read}); 
+    YandexMetrica.sendEvent('notShowRead', { value: !this.state.not_show_read });
 
     AsyncStorage.setItem('not_show_read', (!this.state.not_show_read).toString()).then(() => {
       this.setState({
@@ -206,7 +234,7 @@ class Home extends React.Component {
   }
   setPropertySortNewBook() {
 
-    YandexMetrica.sendEvent('sortNewBook',{value: !this.state.sort_new_book}); 
+    YandexMetrica.sendEvent('sortNewBook', { value: !this.state.sort_new_book });
 
     AsyncStorage.setItem('sort_new_book', (!this.state.sort_new_book).toString()).then(() => {
       this.setState({
@@ -219,7 +247,7 @@ class Home extends React.Component {
 
   setPropertyShowOnlyLoaded() {
 
-    YandexMetrica.sendEvent('showOnlyLoaded',{value: !this.state.show_only_loaded}); 
+    YandexMetrica.sendEvent('showOnlyLoaded', { value: !this.state.show_only_loaded });
 
     AsyncStorage.setItem('show_only_loaded', (!this.state.show_only_loaded).toString()).then(() => {
       this.setState({
@@ -256,14 +284,14 @@ class Home extends React.Component {
       <SafeAreaView style={applicationStyles.save_area_view}>
         <View style={homeStyles.header}>
 
-          <View style={homeStyles.header_empty_block}/>
+          <View style={homeStyles.header_empty_block} />
 
           <View style={homeStyles.logo}>
             <Text style={homeStyles.logo_text}>Read</Text>
             <Text style={homeStyles.logo_dot}>.</Text>
           </View>
 
-          {(this.props.root.state.has_subscription == false ) ? (
+          {(this.props.root.state.has_subscription == false) ? (
             <TouchableOpacity onPress={() => this.props.tabs.navigation.navigate('Subscription')}>
               <Image style={{ width: 30, height: 30, marginTop: 2.5 }} source={require('./app/images/header/ads.jpg')} />
             </TouchableOpacity>

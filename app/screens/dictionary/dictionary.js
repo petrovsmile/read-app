@@ -66,12 +66,12 @@ class Dictionary extends React.Component {
     }).get();
 
     if (server_words != false) {
-
+     
       var ar_delete_keys = [];
       var ar_add_keys = [];
 
       //Удаляем с устройства если на сервере удалили
-      await Promise.all(this.storage_words.map(async storage_word => {
+      await Promise.all(this.storage_words.reverse().map(async storage_word => {
         var has_word = false;
         await Promise.all(server_words.map(async server_word => {
           if (server_word.original == storage_word.original && has_word == false) {
@@ -92,7 +92,7 @@ class Dictionary extends React.Component {
         }
       }));
 
-      await Promise.all(server_words.map(async server_word => {
+      await Promise.all(server_words.reverse().map(async server_word => {
         //Добавляем, если на сервере есть новые
         var has_word = false;
         this.storage_words.forEach((storage_word) => {
@@ -115,23 +115,12 @@ class Dictionary extends React.Component {
       words_keys = await new Storage().get('words_keys', '[]');
       words_keys = JSON.parse(words_keys);
 
-      if (words_keys.length == 0) {
-        var first_load = true;
-      } else {
-        var first_load = false;
-      }
-
       ar_add_keys.forEach(function (add_key) {
         var index = words_keys.indexOf(add_key);
         if (index > -1) {
           words_keys.splice(index, 1);
         }
-        if (first_load == true) {
-          words_keys.push(add_key);
-        } else {
-          words_keys.unshift(add_key);
-        }
-
+        words_keys.unshift(add_key);
       });
 
       ar_delete_keys.forEach(function (delete_key) {
@@ -216,6 +205,19 @@ class Dictionary extends React.Component {
             {this.state.do_not_find == false &&
               <View style={{ flex: 1, flexDirection: 'column' }}>
                 <View style={{ padding: 8 }}>
+
+                  {this.props.root.state.has_subscription == false &&
+                    <React.Fragment>
+                      <Text>Вы использовали {this.state.words.length} из 30 слов</Text>
+                      <View style={{marginTop: 10, marginBottom: 10, backgroundColor: '#eee', borderRadius: 4, height: 15, overflow: 'hidden'}}>
+                        <View style={{
+                          width: Dimensions.get('window').width * (this.state.words.length/30), 
+                          height: 15, backgroundColor: '#f05458'}}></View>
+                      </View>
+                      <Text style={{ color: '#aaa', fontSize: 12, marginBottom: 15 }}>Без PRO-доступа можно добавить максимум 30 слов</Text>
+                    </React.Fragment>
+                  }
+
                   <Text style={{}}>
                     Сортировать по:
                   </Text>

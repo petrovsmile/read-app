@@ -52,7 +52,7 @@ class Bookmarks extends React.Component {
       var ar_add_keys = [];
 
       //Удаляем с устройства если на сервере удалили
-      await Promise.all(this.storage_bookmarks.map(async storage_bookmark => {
+      await Promise.all(this.storage_bookmarks.reverse().map(async storage_bookmark => {
         var has_bookmark = false;
         await Promise.all(server_bookmarks.map(async server_bookmark => {
           if (server_bookmark.book.id == storage_bookmark.book_id && has_bookmark == false) {
@@ -63,7 +63,7 @@ class Bookmarks extends React.Component {
           if (storage_bookmark.offline == true) {
             await new Request('/api/v1/bookmarks', {
               book_id: storage_bookmark.book_id,
-              user_id: storage_bookmark.user_id,
+              user_id: this.props.root.state.current_user.id,
               page: storage_bookmark.page,
               paragraph: storage_bookmark.paragraph
             }, {
@@ -75,7 +75,7 @@ class Bookmarks extends React.Component {
         }
       }));
 
-      await Promise.all(server_bookmarks.map(async server_bookmark => {
+      await Promise.all(server_bookmarks.reverse().map(async server_bookmark => {
         //Добавляем, если на сервере есть новые
         var has_bookmark = false;
         this.storage_bookmarks.forEach((storage_bookmark) => {
@@ -117,23 +117,12 @@ class Bookmarks extends React.Component {
         bookmarks_keys = JSON.parse(bookmarks_keys);
       }
 
-      if (bookmarks_keys.length == 0) {
-        var first_load = true;
-      } else {
-        var first_load = false;
-      }
-
       ar_add_keys.forEach(function (add_key) {
         var index = bookmarks_keys.indexOf(add_key);
         if (index > -1) {
           bookmarks_keys.splice(index, 1);
         }
-        if (first_load == true) {
-          bookmarks_keys.push(add_key);
-        } else {
-          bookmarks_keys.unshift(add_key);
-        }
-
+        bookmarks_keys.unshift(add_key);
       });
 
       ar_delete_keys.forEach(function (delete_key) {

@@ -144,7 +144,6 @@ class Subscription extends React.Component {
         });
       }
     } catch (error) {
-      console.log(error);
       this.setState({
         load_payment_button: false
       });

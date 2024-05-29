@@ -1,5 +1,5 @@
-const CURRENT_IOS_VERSION = '1.1.5'
-const CURRENT_ANDROID_VERSION = '1.1.7'
+const CURRENT_IOS_VERSION = '1.1.8'
+const CURRENT_ANDROID_VERSION = '1.1.8'
 const BOOKS_FILENAME = 'books_v1.json'
 const POLICY_VERSION = 'v6'
 const HOST="https://read-en.ru"
