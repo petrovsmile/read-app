@@ -263,7 +263,7 @@ class ModalTranslateWord extends React.Component {
 
                     <TouchableOpacity onPress={() => this.deleteWordFromDictionary()}>
                       <View style={{ borderWidth: 1, borderColor: '#ddd', margin: 10, marginTop: 0, height: 32, width: 230, flexDirection: 'column', justifyContent: 'center', borderRadius: 5 }}>
-                        <Text style={{ color: '#444', lineHeight: 32, textAlign: 'center' }}>Удалить из словаря</Text>
+                        <Text style={{ color: '#444', lineHeight: 30, textAlign: 'center' }}>Удалить из словаря</Text>
                       </View>
                     </TouchableOpacity>
                   </React.Fragment>
@@ -273,20 +273,22 @@ class ModalTranslateWord extends React.Component {
                       {this.state.count_words < 30 ? (
                         <TouchableOpacity onPress={() => this.addWordToDictionary()}>
                           <View style={{ flex: 1, width: this.props.has_subscription ? 230 : 198, borderWidth: 1, borderColor: '#ddd', height: 32, flexDirection: 'column', justifyContent: 'center', borderRadius: 5 }}>
-                            <Text style={{ color: '#444', lineHeight: 32, textAlign: 'center' }}>Добавить в словарь</Text>
+                            <Text style={{ color: '#444', lineHeight: 30, textAlign: 'center' }}>Добавить в словарь</Text>
                           </View>
                         </TouchableOpacity>
                       ) : (
-                        <View style={{ flex: 1, width: this.props.has_subscription ? 230 : 198, height: 34, flexDirection: 'column', justifyContent: 'center', borderRadius: 5 }}>
-                          <Text style={{ color: '#444', lineHeight: 34, textAlign: 'center' }}>Вы исчерпали лимит</Text>
+                        <View style={{ flex: 1, width: this.props.has_subscription ? 230 : 198, height: 32, flexDirection: 'column', justifyContent: 'center', borderRadius: 5 }}>
+                          <Text style={{ color: '#444', lineHeight: 30, textAlign: 'center' }}>Вы исчерпали лимит</Text>
                         </View>
                       )}
                       {this.props.has_subscription == false &&
                         <TouchableOpacity onPress={() => this.setState({ show_limits_information: !this.state.show_limits_information })}>
-                          <View style={{ width: 24, height: 24, margin: 6, borderWidth: 1, borderColor: '#ddd', borderRadius: 4 }}>
-                            <Text style={{ fontSize: 14, color: '#aaa', width: 24, lineHeight: 24, textAlign: 'center' }}>
-                              {this.state.show_limits_information ? ('X') : ('?')}
-                            </Text>
+                          <View style={{ width: 24, height: 24, margin: 6, borderWidth: 1, borderColor: '#ddd', borderRadius: 4, overflow: 'hidden' }}>
+                            {this.state.show_limits_information ? (
+                              <Image style={{ width: 22, height: 22}} source={require('./app/images/books/dictionary_info_close.png')} />
+                            ) : (
+                              <Image style={{ width: 22, height: 22 }} source={require('./app/images/books/dictionary_info.png')} />
+                            )}
                           </View>
                         </TouchableOpacity>
                       }
@@ -294,12 +296,16 @@ class ModalTranslateWord extends React.Component {
 
                     {this.state.show_limits_information &&
                       <View style={{ margin: 10, marginTop: 0 }}>
-                        <View><Text style={{ marginTop: 4, textAlign: 'center', fontSize: 12 }}>Без PRO-доступа вы можете</Text></View>
+                        <View><Text style={{ textAlign: 'center', fontSize: 12 }}>Без PRO-доступа вы можете</Text></View>
                         <View><Text style={{ marginTop: 4, textAlign: 'center', fontSize: 12 }}>добавить до 30 слов</Text></View>
                         <View><Text style={{ marginTop: 4, textAlign: 'center', fontSize: 12 }}>и озвучить до 15 слов в день</Text></View>
 
                         <View><Text style={{ marginTop: 8, textAlign: 'center', fontSize: 12 }}>Вы добавили {this.state.count_words}/30</Text></View>
                         <View><Text style={{ marginTop: 4, textAlign: 'center', fontSize: 12 }}>Вы озвучили {this.state.count_voiceover}/15</Text></View>
+
+                        <TouchableOpacity onPress={() => this.props.openSubscription()}>
+                          <Text style={{ color: '#f05458', fontSize: 12, marginTop: 4, textAlign: 'center', }}>Приобрести PRO-доступ</Text>
+                        </TouchableOpacity>
                       </View>
                     }
                   </React.Fragment>

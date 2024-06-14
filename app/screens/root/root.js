@@ -17,15 +17,17 @@ class RootApp extends React.Component {
       error_description: '',
       type_payment: Platform.OS === 'ios' ? 'by_store' : 'by_yoo_kassa'
     }
+
+    this.notification_timer;
   }
 
   async componentDidMount() {
     if (Platform.OS == 'ios') {
-        RNIap.setup({ storekitMode: 'STOREKIT_HYBRID_MODE' })
+      RNIap.setup({ storekitMode: 'STOREKIT_HYBRID_MODE' })
 
-        await RNIap.initConnection();
-        await RNIap.getSubscriptions({ skus: ['read_1_month', 'read_6_month', 'read_1_year'] });
-        await RNIap.getProducts({ skus: ['read_forever'] });
+      await RNIap.initConnection();
+      await RNIap.getSubscriptions({ skus: ['read_1_month', 'read_6_month', 'read_1_year'] });
+      await RNIap.getProducts({ skus: ['read_forever'] });
     }
 
     var current_user = await new Storage().get('current_user');
@@ -48,15 +50,15 @@ class RootApp extends React.Component {
         has_internet: state.isConnected,
       });
     });
-     
+
     if (await new Storage().get('openAppFirst') == undefined) {
       new Storage().set('openAppFirst', 'true');
 
       YandexMetrica.sendEvent('openAppFirst', {
         platform: Platform.OS,
       });
-    }else{
-      this.check_location();
+    } else {
+      //this.check_location();
 
       YandexMetrica.sendEvent('openAppNotFirst', {
         platform: Platform.OS,
@@ -207,7 +209,10 @@ class RootApp extends React.Component {
       error_description: description,
     });
 
-    setTimeout(() => {
+    console.log(title + ' ' + description);
+
+    clearTimeout(this.notification_timer);
+    this.notification_timer = setTimeout(() => {
       this.setState({
         error_show: false
       });
@@ -277,24 +282,6 @@ class RootApp extends React.Component {
           </View>
         ) : (
           <React.Fragment>
-            {this.state.error_show == true &&
-              <TouchableOpacity onPress={() => this.closeError()} style={applicationStyles.error_request}>
-                <View style={applicationStyles.error_request_texts}>
-                  <Text style={applicationStyles.error_request_text}>
-                    {this.state.error_title}
-                  </Text>
-
-                  {this.state.error_description != undefined &&
-                    <Text style={applicationStyles.error_request_text}>
-                      {this.state.error_description}
-                    </Text>
-                  }
-                </View>
-                <View style={applicationStyles.error_request_icon}>
-                  <Image source={require('./app/images/layouts/error_close.png')} style={applicationStyles.error_request_icon_image} />
-                </View>
-              </TouchableOpacity>
-            }
             <NavigationContainer>
               <Stack.Navigator initialRouteName="Home">
                 <Stack.Screen name="Home" options={() => ({ headerShown: false })}>
@@ -335,9 +322,27 @@ class RootApp extends React.Component {
                 </Stack.Screen>
               </Stack.Navigator>
             </NavigationContainer>
+
+            {this.state.error_show == true &&
+              <TouchableOpacity onPress={() => this.closeError()} style={applicationStyles.error_request}>
+                <View style={applicationStyles.error_request_texts}>
+                  <Text style={applicationStyles.error_request_text}>
+                    {this.state.error_title}
+                  </Text>
+
+                  {this.state.error_description != undefined &&
+                    <Text style={applicationStyles.error_request_text}>
+                      {this.state.error_description}
+                    </Text>
+                  }
+                </View>
+                <View style={applicationStyles.error_request_icon}>
+                  <Image source={require('./app/images/layouts/error_close.png')} style={applicationStyles.error_request_icon_image} />
+                </View>
+              </TouchableOpacity>
+            }
           </React.Fragment>
-        )
-        }
+        )}
       </React.Fragment>
     );
   }

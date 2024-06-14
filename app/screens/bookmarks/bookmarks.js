@@ -51,14 +51,14 @@ class Bookmarks extends React.Component {
       var ar_delete_keys = [];
       var ar_add_keys = [];
 
-      //Удаляем с устройства если на сервере удалили
+      // Удаляем с устройства если на сервере удалили и добавляем на сервере, если есть добавленные на устройстве offline
       await Promise.all(this.storage_bookmarks.reverse().map(async storage_bookmark => {
         var has_bookmark = false;
-        await Promise.all(server_bookmarks.map(async server_bookmark => {
+        server_bookmarks.map(async server_bookmark => {
           if (server_bookmark.book.id == storage_bookmark.book_id && has_bookmark == false) {
             has_bookmark = true;
           }
-        }));
+        })
         if (has_bookmark == false) {
           if (storage_bookmark.offline == true) {
             await new Request('/api/v1/bookmarks', {
@@ -76,7 +76,7 @@ class Bookmarks extends React.Component {
       }));
 
       await Promise.all(server_bookmarks.reverse().map(async server_bookmark => {
-        //Добавляем, если на сервере есть новые
+        // Добавляем, если на сервере есть новые
         var has_bookmark = false;
         this.storage_bookmarks.forEach((storage_bookmark) => {
           if (server_bookmark.book.id == storage_bookmark.book_id && has_bookmark == false) {
@@ -94,7 +94,7 @@ class Bookmarks extends React.Component {
           ar_add_keys.push('bookmark_' + server_bookmark.book.id);
         }
 
-        //Обновляем, если на сервере параграф больше
+        // Обновляем, если на сервере параграф больше
         this.storage_bookmarks.forEach((storage_bookmark) => {
           if (server_bookmark.book.id == storage_bookmark.book_id) {
             if (server_bookmark.paragraph > storage_bookmark.paragraph) {

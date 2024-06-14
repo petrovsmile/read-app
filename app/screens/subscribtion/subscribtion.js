@@ -376,6 +376,23 @@ class Subscription extends React.Component {
                   </View>
                 </View>
 
+                <View style={{ flexDirection: 'row', marginTop: 20, marginBottom: 15 }}>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+                      <Image style={{ width: 50, height: 50, marginBottom: 10 }} source={require('./app/images/subscrition/dictionary.png')} />
+                    </View>
+                    <Text style={{ textAlign: 'center', fontSize: 16 }}>Словарь</Text>
+                    <Text style={{ textAlign: 'center', fontSize: 16 }}>без ограничений</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+                      <Image style={{ width: 50, height: 50, marginBottom: 10 }} source={require('./app/images/subscrition/voiceover.png')} />
+                    </View>
+                    <Text style={{ textAlign: 'center', fontSize: 16 }}>Озвучка слов</Text>
+                    <Text style={{ textAlign: 'center', fontSize: 16 }}>без ограничений</Text>
+                  </View>
+                </View>
+
                 <Text style={{ marginTop: 15 }}>PRO-доступ распространяется на сайт <Text onPress={() => Linking.openURL("https://read-en.ru")} style={{ color: app_theme_colors.red }}>read-en.ru</Text> и другие устройства, авторизованные под вашим аккаунтом.</Text>
               </React.Fragment>
             }

@@ -43,7 +43,7 @@ const applicationStyles = StyleSheet.create({
     position: 'absolute',
     backgroundColor: app_theme_colors.red,
     width: Dimensions.get('window').width - 30,
-    top: 40,
+    top: 15,
     left: 15,
     zIndex: 100000000,
     flexDirection: 'row',

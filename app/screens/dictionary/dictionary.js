@@ -66,18 +66,20 @@ class Dictionary extends React.Component {
     }).get();
 
     if (server_words != false) {
-     
+
+      console.log(server_words);
+
       var ar_delete_keys = [];
       var ar_add_keys = [];
 
-      //Удаляем с устройства если на сервере удалили
+      // Удаляем с устройства если на сервере удалили и добавляем на сервере, если есть добавленные на устройстве offline
       await Promise.all(this.storage_words.reverse().map(async storage_word => {
         var has_word = false;
-        await Promise.all(server_words.map(async server_word => {
+        server_words.map(async server_word => {
           if (server_word.original == storage_word.original && has_word == false) {
             has_word = true;
           }
-        }));
+        })
         if (has_word == false) {
           if (storage_word.offline == true) {
             await new Request('/api/v1/dictionary/words', {
@@ -93,7 +95,7 @@ class Dictionary extends React.Component {
       }));
 
       await Promise.all(server_words.reverse().map(async server_word => {
-        //Добавляем, если на сервере есть новые
+        // Добавляем, если на сервере есть новые
         var has_word = false;
         this.storage_words.forEach((storage_word) => {
           if (server_word.original == storage_word.original && has_word == false) {
@@ -209,10 +211,11 @@ class Dictionary extends React.Component {
                   {this.props.root.state.has_subscription == false &&
                     <React.Fragment>
                       <Text>Вы использовали {this.state.words.length} из 30 слов</Text>
-                      <View style={{marginTop: 10, marginBottom: 10, backgroundColor: '#eee', borderRadius: 4, height: 15, overflow: 'hidden'}}>
+                      <View style={{ marginTop: 10, marginBottom: 10, backgroundColor: '#eee', borderRadius: 4, height: 15, overflow: 'hidden' }}>
                         <View style={{
-                          width: Dimensions.get('window').width * (this.state.words.length/30), 
-                          height: 15, backgroundColor: '#f05458'}}></View>
+                          width: Dimensions.get('window').width * (this.state.words.length / 30),
+                          height: 15, backgroundColor: '#f05458'
+                        }}></View>
                       </View>
                       <Text style={{ color: '#aaa', fontSize: 12, marginBottom: 15 }}>Без PRO-доступа можно добавить максимум 30 слов</Text>
                     </React.Fragment>

@@ -702,7 +702,7 @@ class Reader extends React.Component {
                         <Text style={{ color: '#FFF', textAlign: 'center', lineHeight: 50, fontSize: 16 }}>Смотреть рекламу</Text>
                       </TouchableOpacity>
 
-                      <TouchableOpacity onPress={() => this.props.tabs.navigation.navigate('Subscription')} style={{ marginTop: 15, marginBottom: 30, backgroundColor: '#f05458', height: 50, borderRadius: 10 }}>
+                      <TouchableOpacity onPress={() => this.props.stack.navigation.navigate('Subscription')} style={{ marginTop: 15, marginBottom: 30, backgroundColor: '#f05458', height: 50, borderRadius: 10 }}>
                         <Text style={{ color: '#FFF', textAlign: 'center', lineHeight: 50, fontSize: 16 }}>Приобрести PRO-версию</Text>
                       </TouchableOpacity>
                     </View>
@@ -711,7 +711,7 @@ class Reader extends React.Component {
               </TouchableOpacity>
             }
 
-            <ModalNoAd visible={this.state.showNoAd} drawer={this.props.tabs} close={() => this.closeNoAdInfo()} />
+            <ModalNoAd visible={this.state.showNoAd} close={() => this.closeNoAdInfo()} />
 
             <ModalFastLearning
               visible={this.state.showTraining}
@@ -735,6 +735,7 @@ class Reader extends React.Component {
               close={() => this.closeTranslateWord()}
               openAuthModal={() => this.openAuthModal()}
               setWordInDictionary={(flag) => this.setWordInDictionary(flag)}
+              openSubscription={() => this.props.stack.navigation.navigate('Subscription')}
             />
 
             <View style={{

@@ -205,7 +205,7 @@ const applicationStyles = StyleSheet.create({
     position: 'absolute',
     backgroundColor: app_theme_colors.red,
     width: Dimensions.get('window').width - 30,
-    top: 40,
+    top: 15,
     left: 15,
     zIndex: 100000000,
     flexDirection: 'row',
@@ -606,323 +606,6 @@ class Storage {
     await AsyncStorage.removeItem(key);
   }
 }
-class Dictionary extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      auth_modal: false,
-      auth_method: 'login',
-      words: [],
-      do_not_find: false,
-      sorting_by: 'date'
-    };
-
-    this.storage_words = [];
-  }
-
-  async componentDidMount() {
-    this.props.stack.navigation.addListener('focus', () => {
-      this.getWords();
-    });
-
-    this.getWords();
-  }
-
-  async getWords() {
-    if (this.props.root.state.current_user != false) {
-      await this.setState({
-        do_not_find: false,
-        words: [],
-      });
-
-      this.storage_words = await this.getWordsFromStorage();
-      await this.getWordsFromServer();
-      var words = await this.getWordsFromStorage();
-
-      if (this.state.sorting_by == 'alphabet') {
-        words = words.sort((a, b) => {
-          return a.original >= b.original ? 0 : - 1;
-        });
-      }
-
-      this.setState({
-        words: words,
-        do_not_find: words.length == 0
-      });
-    }
-  }
-
-  async getWordsFromStorage() {
-    var words_keys = await new Storage().get('words_keys', '[]');
-    words_keys = JSON.parse(words_keys);
-
-    var words = await Promise.all(words_keys.map(async word_key => {
-      var word = await new Storage().get(word_key, '{}');
-
-      return JSON.parse(word);
-    }));
-
-    return words;
-  }
-
-  async getWordsFromServer() {
-    var server_words = await new Request('/api/v1/dictionary/words', {
-      user_id: this.props.root.state.current_user.id
-    }, {
-      do_not_show_error: true
-    }).get();
-
-    if (server_words != false) {
-     
-      var ar_delete_keys = [];
-      var ar_add_keys = [];
-
-      //Удаляем с устройства если на сервере удалили
-      await Promise.all(this.storage_words.reverse().map(async storage_word => {
-        var has_word = false;
-        await Promise.all(server_words.map(async server_word => {
-          if (server_word.original == storage_word.original && has_word == false) {
-            has_word = true;
-          }
-        }));
-        if (has_word == false) {
-          if (storage_word.offline == true) {
-            await new Request('/api/v1/dictionary/words', {
-              original: storage_word.original,
-              user_id: this.props.root.state.current_user.id
-            }, {
-              do_not_show_error: true
-            }).post();
-          } else {
-            ar_delete_keys.push('word_' + storage_word.original);
-          }
-        }
-      }));
-
-      await Promise.all(server_words.reverse().map(async server_word => {
-        //Добавляем, если на сервере есть новые
-        var has_word = false;
-        this.storage_words.forEach((storage_word) => {
-          if (server_word.original == storage_word.original && has_word == false) {
-            has_word = true;
-          }
-        });
-
-        if (has_word == false) {
-          await new Storage().set('word_' + server_word.original, JSON.stringify({
-            original: server_word.original,
-            transcription: server_word.transcription,
-            translate: server_word.translate,
-            created_at: server_word.created_at
-          }));
-          ar_add_keys.push('word_' + server_word.original);
-        }
-      }));
-
-      words_keys = await new Storage().get('words_keys', '[]');
-      words_keys = JSON.parse(words_keys);
-
-      ar_add_keys.forEach(function (add_key) {
-        var index = words_keys.indexOf(add_key);
-        if (index > -1) {
-          words_keys.splice(index, 1);
-        }
-        words_keys.unshift(add_key);
-      });
-
-      ar_delete_keys.forEach(function (delete_key) {
-        var index = words_keys.indexOf(delete_key);
-        if (index > -1) {
-          words_keys.splice(index, 1);
-        }
-      });
-
-      await new Storage().set('words_keys', JSON.stringify(words_keys));
-    }
-  }
-
-  async deleteWord(rowMap, data) {
-    words_keys = await new Storage().get('words_keys');
-    words_keys = JSON.parse(words_keys);
-
-    var index = words_keys.indexOf('word_' + data.original);
-    if (index > -1) {
-      words_keys.splice(index, 1);
-    }
-
-    new Storage().set('words_keys', JSON.stringify(words_keys));
-
-    await new Request('/api/v1/dictionary/words', {
-      original: data.original,
-      user_id: this.props.root.state.current_user.id
-    }, {
-      desciption_error: 'Слово удалено только с этого устройства.'
-    }).delete();
-
-    this.getWords();
-  }
-
-  set_sorting_by(sorting_by) {
-    this.setState({
-      sorting_by: sorting_by
-    }, function () {
-      this.getWords();
-    });
-  }
-
-  render() {
-    return (
-      <SafeAreaView style={applicationStyles.save_area_view}>
-        <Modal
-          animationType="slide"
-          presentationStyle={'overFullScreen'}
-          visible={this.state.auth_modal && this.props.root.state.current_user == false}>
-          <Auth method={this.state.auth_method} modal={true} close={() => this.setState({ auth_modal: false })} />
-        </Modal>
-
-        {this.props.root.state.current_user == false ? (
-          <View style={dictionaryStyles.auth_content}>
-            <Text style={dictionaryStyles.auth_into}>
-              Для того чтобы воспользоваться
-              словарем, необходимо
-            </Text>
-            <Text onPress={() => this.setState({ auth_modal: true, auth_method: 'login' })} style={[dictionaryStyles.auth_into, { color: '#f05458', marginTop: 15 }]}>авторизоваться</Text>
-            <Text style={dictionaryStyles.auth_into}>или</Text>
-            <Text onPress={() => this.setState({ auth_modal: true, auth_method: 'reg' })} style={[dictionaryStyles.auth_into, { color: '#f05458' }]}>зарегистрироваться</Text>
-          </View>
-        ) : (
-          <React.Fragment>
-
-            {this.state.do_not_find == true &&
-              <View style={{ marginTop: 100, flex: 1, padding: 15 }}>
-                <Text style={{ textAlign: 'center', fontSize: 20, fontWeight: 'bold' }}>
-                  Нет слов...
-                </Text>
-                <Text style={{ textAlign: 'center', fontSize: 20, color: '#aaa', marginTop: 8 }}>
-                  Мы можете добавить перевод любого слова на странице книги
-                </Text>
-                <Text style={{ marginTop: 50, fontSize: 14, color: '#aaa', textAlign: 'center' }}>Если вы добавили слово, но оно не отображается, обновите раздел</Text>
-                <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 15 }}>
-                  <TouchableOpacity style={{ width: 200, height: 40, backgroundColor: '#ddd', borderRadius: 10 }} onPress={() => this.getWords()}>
-                    <Text style={{ lineHeight: 40, textAlign: 'center' }}>Обновить</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            }
-            {this.state.do_not_find == false &&
-              <View style={{ flex: 1, flexDirection: 'column' }}>
-                <View style={{ padding: 8 }}>
-
-                  {this.props.root.state.has_subscription == false &&
-                    <React.Fragment>
-                      <Text>Вы использовали {this.state.words.length} из 30 слов</Text>
-                      <View style={{marginTop: 10, marginBottom: 10, backgroundColor: '#eee', borderRadius: 4, height: 15, overflow: 'hidden'}}>
-                        <View style={{
-                          width: Dimensions.get('window').width * (this.state.words.length/30), 
-                          height: 15, backgroundColor: '#f05458'}}></View>
-                      </View>
-                      <Text style={{ color: '#aaa', fontSize: 12, marginBottom: 15 }}>Без PRO-доступа можно добавить максимум 30 слов</Text>
-                    </React.Fragment>
-                  }
-
-                  <Text style={{}}>
-                    Сортировать по:
-                  </Text>
-
-
-                  <View style={{ height: 24, flexDirection: 'row', justifyContent: 'flex-start', marginTop: 8 }}>
-                    <TouchableOpacity onPress={() => this.set_sorting_by('date')}>
-                      <View style={[dictionaryStyles.button_sorting, this.state.sorting_by == 'date' ? { backgroundColor: '#aaa', borderColor: '#aaa' } : {}]}>
-                        <Text style={[this.state.sorting_by == 'date' ? { color: '#FFF' } : {}, { fontSize: 12, lineHeight: 22 }]}>дате добавления</Text>
-                      </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => this.set_sorting_by('alphabet')}>
-                      <View style={[dictionaryStyles.button_sorting, this.state.sorting_by == 'alphabet' ? { backgroundColor: '#aaa', borderColor: '#aaa' } : {}, { marginLeft: 8 }]}>
-                        <Text style={[this.state.sorting_by == 'alphabet' ? { color: '#FFF' } : {}, { fontSize: 12, lineHeight: 22 }]}>по алфавиту</Text>
-                      </View>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-
-                <SwipeListView
-                  style={{ flex: 1, zIndex: 0, paddingTop: 8 }}
-                  refreshControl={
-                    <RefreshControl refreshing={false} onRefresh={() => this.getWords()} />
-                  }
-                  showsHorizontalScrollIndicator={false}
-                  scrollIndicatorInsets={{ right: 1 }}
-                  removeClippedSubviews={true}
-                  contentContainerStyle={{ paddingBottom: 100 }}
-                  data={this.state.words}
-                  renderItem={(word) => {
-                    return (
-                      <View style={{ marginLeft: 8, marginRight: 8, backgroundColor: '#FFF', borderColor: '#eee', borderWidth: 1, borderRadius: 4, marginBottom: 8, overflow: 'hidden' }}>
-                        <View style={{ height: 4, backgroundColor: '#eee' }}></View>
-                        <View style={{ padding: 8 }}>
-                          <Text style={{ fontWeight: 'bold' }}>{word.item.original}</Text>
-                          {word.item.transcription != null &&
-                            <Text style={{ color: '#aaa', marginTop: 4 }}>{word.item.transcription}</Text>
-                          }
-                          <Text style={{ marginTop: 4 }}>{word.item.translate}</Text>
-                        </View>
-                      </View>
-                    )
-                  }}
-                  keyExtractor={(word) => word.original}
-                  ListEmptyComponent={() => <PreviewWords />}
-                  rightOpenValue={-40}
-                  disableRightSwipe={true}
-                  renderHiddenItem={(data, rowMap) => {
-                    return (
-                      <View style={{ flex: 1, flexDirection: 'row', heihgt: 40, justifyContent: 'flex-end', marginRight: 8 }}>
-                        <TouchableOpacity onPress={() => this.deleteWord(rowMap, data.item)}>
-                          <Image style={{ width: 20, height: 20, margin: 10 }} source={require('./app/images/bookmarks/delete.png')} />
-                        </TouchableOpacity>
-                      </View>
-                    )
-                  }}
-                />
-              </View>
-            }
-          </React.Fragment>
-        )}
-      </SafeAreaView>
-
-    )
-  }
-}
-
-
-
-
-function PreviewWords() {
-  return (
-    <React.Fragment>
-      <PreviewWord />
-      <PreviewWord />
-      <PreviewWord />
-      <PreviewWord />
-      <PreviewWord />
-      <PreviewWord />
-      <PreviewWord />
-      <PreviewWord />
-      <PreviewWord />
-      <PreviewWord />
-    </React.Fragment>
-  );
-}
-
-function PreviewWord() {
-  return (
-    <React.Fragment>
-      <View style={{ margin: 8, height: 50, borderRadius: 4, overflow: 'hidden', backgroundColor: '#eee' }}>
-        <ActivityIndicator style={{ flex: 1 }} size="small" color="#aaa" />
-      </View>
-    </React.Fragment>
-  );
-}
 class Bookmarks extends React.Component {
   constructor(props) {
     super(props);
@@ -976,14 +659,14 @@ class Bookmarks extends React.Component {
       var ar_delete_keys = [];
       var ar_add_keys = [];
 
-      //Удаляем с устройства если на сервере удалили
+      // Удаляем с устройства если на сервере удалили и добавляем на сервере, если есть добавленные на устройстве offline
       await Promise.all(this.storage_bookmarks.reverse().map(async storage_bookmark => {
         var has_bookmark = false;
-        await Promise.all(server_bookmarks.map(async server_bookmark => {
+        server_bookmarks.map(async server_bookmark => {
           if (server_bookmark.book.id == storage_bookmark.book_id && has_bookmark == false) {
             has_bookmark = true;
           }
-        }));
+        })
         if (has_bookmark == false) {
           if (storage_bookmark.offline == true) {
             await new Request('/api/v1/bookmarks', {
@@ -1001,7 +684,7 @@ class Bookmarks extends React.Component {
       }));
 
       await Promise.all(server_bookmarks.reverse().map(async server_bookmark => {
-        //Добавляем, если на сервере есть новые
+        // Добавляем, если на сервере есть новые
         var has_bookmark = false;
         this.storage_bookmarks.forEach((storage_bookmark) => {
           if (server_bookmark.book.id == storage_bookmark.book_id && has_bookmark == false) {
@@ -1019,7 +702,7 @@ class Bookmarks extends React.Component {
           ar_add_keys.push('bookmark_' + server_bookmark.book.id);
         }
 
-        //Обновляем, если на сервере параграф больше
+        // Обновляем, если на сервере параграф больше
         this.storage_bookmarks.forEach((storage_bookmark) => {
           if (server_bookmark.book.id == storage_bookmark.book_id) {
             if (server_bookmark.paragraph > storage_bookmark.paragraph) {
@@ -1265,6 +948,326 @@ class Bookmark extends React.Component {
       </View>
     )
   }
+}
+class Dictionary extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      auth_modal: false,
+      auth_method: 'login',
+      words: [],
+      do_not_find: false,
+      sorting_by: 'date'
+    };
+
+    this.storage_words = [];
+  }
+
+  async componentDidMount() {
+    this.props.stack.navigation.addListener('focus', () => {
+      this.getWords();
+    });
+
+    this.getWords();
+  }
+
+  async getWords() {
+    if (this.props.root.state.current_user != false) {
+      await this.setState({
+        do_not_find: false,
+        words: [],
+      });
+
+      this.storage_words = await this.getWordsFromStorage();
+      await this.getWordsFromServer();
+      var words = await this.getWordsFromStorage();
+
+      if (this.state.sorting_by == 'alphabet') {
+        words = words.sort((a, b) => {
+          return a.original >= b.original ? 0 : - 1;
+        });
+      }
+
+      this.setState({
+        words: words,
+        do_not_find: words.length == 0
+      });
+    }
+  }
+
+  async getWordsFromStorage() {
+    var words_keys = await new Storage().get('words_keys', '[]');
+    words_keys = JSON.parse(words_keys);
+
+    var words = await Promise.all(words_keys.map(async word_key => {
+      var word = await new Storage().get(word_key, '{}');
+
+      return JSON.parse(word);
+    }));
+
+    return words;
+  }
+
+  async getWordsFromServer() {
+    var server_words = await new Request('/api/v1/dictionary/words', {
+      user_id: this.props.root.state.current_user.id
+    }, {
+      do_not_show_error: true
+    }).get();
+
+    if (server_words != false) {
+
+      console.log(server_words);
+
+      var ar_delete_keys = [];
+      var ar_add_keys = [];
+
+      // Удаляем с устройства если на сервере удалили и добавляем на сервере, если есть добавленные на устройстве offline
+      await Promise.all(this.storage_words.reverse().map(async storage_word => {
+        var has_word = false;
+        server_words.map(async server_word => {
+          if (server_word.original == storage_word.original && has_word == false) {
+            has_word = true;
+          }
+        })
+        if (has_word == false) {
+          if (storage_word.offline == true) {
+            await new Request('/api/v1/dictionary/words', {
+              original: storage_word.original,
+              user_id: this.props.root.state.current_user.id
+            }, {
+              do_not_show_error: true
+            }).post();
+          } else {
+            ar_delete_keys.push('word_' + storage_word.original);
+          }
+        }
+      }));
+
+      await Promise.all(server_words.reverse().map(async server_word => {
+        // Добавляем, если на сервере есть новые
+        var has_word = false;
+        this.storage_words.forEach((storage_word) => {
+          if (server_word.original == storage_word.original && has_word == false) {
+            has_word = true;
+          }
+        });
+
+        if (has_word == false) {
+          await new Storage().set('word_' + server_word.original, JSON.stringify({
+            original: server_word.original,
+            transcription: server_word.transcription,
+            translate: server_word.translate,
+            created_at: server_word.created_at
+          }));
+          ar_add_keys.push('word_' + server_word.original);
+        }
+      }));
+
+      words_keys = await new Storage().get('words_keys', '[]');
+      words_keys = JSON.parse(words_keys);
+
+      ar_add_keys.forEach(function (add_key) {
+        var index = words_keys.indexOf(add_key);
+        if (index > -1) {
+          words_keys.splice(index, 1);
+        }
+        words_keys.unshift(add_key);
+      });
+
+      ar_delete_keys.forEach(function (delete_key) {
+        var index = words_keys.indexOf(delete_key);
+        if (index > -1) {
+          words_keys.splice(index, 1);
+        }
+      });
+
+      await new Storage().set('words_keys', JSON.stringify(words_keys));
+    }
+  }
+
+  async deleteWord(rowMap, data) {
+    words_keys = await new Storage().get('words_keys');
+    words_keys = JSON.parse(words_keys);
+
+    var index = words_keys.indexOf('word_' + data.original);
+    if (index > -1) {
+      words_keys.splice(index, 1);
+    }
+
+    new Storage().set('words_keys', JSON.stringify(words_keys));
+
+    await new Request('/api/v1/dictionary/words', {
+      original: data.original,
+      user_id: this.props.root.state.current_user.id
+    }, {
+      desciption_error: 'Слово удалено только с этого устройства.'
+    }).delete();
+
+    this.getWords();
+  }
+
+  set_sorting_by(sorting_by) {
+    this.setState({
+      sorting_by: sorting_by
+    }, function () {
+      this.getWords();
+    });
+  }
+
+  render() {
+    return (
+      <SafeAreaView style={applicationStyles.save_area_view}>
+        <Modal
+          animationType="slide"
+          presentationStyle={'overFullScreen'}
+          visible={this.state.auth_modal && this.props.root.state.current_user == false}>
+          <Auth method={this.state.auth_method} modal={true} close={() => this.setState({ auth_modal: false })} />
+        </Modal>
+
+        {this.props.root.state.current_user == false ? (
+          <View style={dictionaryStyles.auth_content}>
+            <Text style={dictionaryStyles.auth_into}>
+              Для того чтобы воспользоваться
+              словарем, необходимо
+            </Text>
+            <Text onPress={() => this.setState({ auth_modal: true, auth_method: 'login' })} style={[dictionaryStyles.auth_into, { color: '#f05458', marginTop: 15 }]}>авторизоваться</Text>
+            <Text style={dictionaryStyles.auth_into}>или</Text>
+            <Text onPress={() => this.setState({ auth_modal: true, auth_method: 'reg' })} style={[dictionaryStyles.auth_into, { color: '#f05458' }]}>зарегистрироваться</Text>
+          </View>
+        ) : (
+          <React.Fragment>
+
+            {this.state.do_not_find == true &&
+              <View style={{ marginTop: 100, flex: 1, padding: 15 }}>
+                <Text style={{ textAlign: 'center', fontSize: 20, fontWeight: 'bold' }}>
+                  Нет слов...
+                </Text>
+                <Text style={{ textAlign: 'center', fontSize: 20, color: '#aaa', marginTop: 8 }}>
+                  Мы можете добавить перевод любого слова на странице книги
+                </Text>
+                <Text style={{ marginTop: 50, fontSize: 14, color: '#aaa', textAlign: 'center' }}>Если вы добавили слово, но оно не отображается, обновите раздел</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 15 }}>
+                  <TouchableOpacity style={{ width: 200, height: 40, backgroundColor: '#ddd', borderRadius: 10 }} onPress={() => this.getWords()}>
+                    <Text style={{ lineHeight: 40, textAlign: 'center' }}>Обновить</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            }
+            {this.state.do_not_find == false &&
+              <View style={{ flex: 1, flexDirection: 'column' }}>
+                <View style={{ padding: 8 }}>
+
+                  {this.props.root.state.has_subscription == false &&
+                    <React.Fragment>
+                      <Text>Вы использовали {this.state.words.length} из 30 слов</Text>
+                      <View style={{ marginTop: 10, marginBottom: 10, backgroundColor: '#eee', borderRadius: 4, height: 15, overflow: 'hidden' }}>
+                        <View style={{
+                          width: Dimensions.get('window').width * (this.state.words.length / 30),
+                          height: 15, backgroundColor: '#f05458'
+                        }}></View>
+                      </View>
+                      <Text style={{ color: '#aaa', fontSize: 12, marginBottom: 15 }}>Без PRO-доступа можно добавить максимум 30 слов</Text>
+                    </React.Fragment>
+                  }
+
+                  <Text style={{}}>
+                    Сортировать по:
+                  </Text>
+
+
+                  <View style={{ height: 24, flexDirection: 'row', justifyContent: 'flex-start', marginTop: 8 }}>
+                    <TouchableOpacity onPress={() => this.set_sorting_by('date')}>
+                      <View style={[dictionaryStyles.button_sorting, this.state.sorting_by == 'date' ? { backgroundColor: '#aaa', borderColor: '#aaa' } : {}]}>
+                        <Text style={[this.state.sorting_by == 'date' ? { color: '#FFF' } : {}, { fontSize: 12, lineHeight: 22 }]}>дате добавления</Text>
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => this.set_sorting_by('alphabet')}>
+                      <View style={[dictionaryStyles.button_sorting, this.state.sorting_by == 'alphabet' ? { backgroundColor: '#aaa', borderColor: '#aaa' } : {}, { marginLeft: 8 }]}>
+                        <Text style={[this.state.sorting_by == 'alphabet' ? { color: '#FFF' } : {}, { fontSize: 12, lineHeight: 22 }]}>по алфавиту</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+
+                <SwipeListView
+                  style={{ flex: 1, zIndex: 0, paddingTop: 8 }}
+                  refreshControl={
+                    <RefreshControl refreshing={false} onRefresh={() => this.getWords()} />
+                  }
+                  showsHorizontalScrollIndicator={false}
+                  scrollIndicatorInsets={{ right: 1 }}
+                  removeClippedSubviews={true}
+                  contentContainerStyle={{ paddingBottom: 100 }}
+                  data={this.state.words}
+                  renderItem={(word) => {
+                    return (
+                      <View style={{ marginLeft: 8, marginRight: 8, backgroundColor: '#FFF', borderColor: '#eee', borderWidth: 1, borderRadius: 4, marginBottom: 8, overflow: 'hidden' }}>
+                        <View style={{ height: 4, backgroundColor: '#eee' }}></View>
+                        <View style={{ padding: 8 }}>
+                          <Text style={{ fontWeight: 'bold' }}>{word.item.original}</Text>
+                          {word.item.transcription != null &&
+                            <Text style={{ color: '#aaa', marginTop: 4 }}>{word.item.transcription}</Text>
+                          }
+                          <Text style={{ marginTop: 4 }}>{word.item.translate}</Text>
+                        </View>
+                      </View>
+                    )
+                  }}
+                  keyExtractor={(word) => word.original}
+                  ListEmptyComponent={() => <PreviewWords />}
+                  rightOpenValue={-40}
+                  disableRightSwipe={true}
+                  renderHiddenItem={(data, rowMap) => {
+                    return (
+                      <View style={{ flex: 1, flexDirection: 'row', heihgt: 40, justifyContent: 'flex-end', marginRight: 8 }}>
+                        <TouchableOpacity onPress={() => this.deleteWord(rowMap, data.item)}>
+                          <Image style={{ width: 20, height: 20, margin: 10 }} source={require('./app/images/bookmarks/delete.png')} />
+                        </TouchableOpacity>
+                      </View>
+                    )
+                  }}
+                />
+              </View>
+            }
+          </React.Fragment>
+        )}
+      </SafeAreaView>
+
+    )
+  }
+}
+
+
+
+
+function PreviewWords() {
+  return (
+    <React.Fragment>
+      <PreviewWord />
+      <PreviewWord />
+      <PreviewWord />
+      <PreviewWord />
+      <PreviewWord />
+      <PreviewWord />
+      <PreviewWord />
+      <PreviewWord />
+      <PreviewWord />
+      <PreviewWord />
+    </React.Fragment>
+  );
+}
+
+function PreviewWord() {
+  return (
+    <React.Fragment>
+      <View style={{ margin: 8, height: 50, borderRadius: 4, overflow: 'hidden', backgroundColor: '#eee' }}>
+        <ActivityIndicator style={{ flex: 1 }} size="small" color="#aaa" />
+      </View>
+    </React.Fragment>
+  );
 }
 var root_home;
 class Home extends React.Component {
@@ -3129,7 +3132,7 @@ class Reader extends React.Component {
                         <Text style={{ color: '#FFF', textAlign: 'center', lineHeight: 50, fontSize: 16 }}>Смотреть рекламу</Text>
                       </TouchableOpacity>
 
-                      <TouchableOpacity onPress={() => this.props.tabs.navigation.navigate('Subscription')} style={{ marginTop: 15, marginBottom: 30, backgroundColor: '#f05458', height: 50, borderRadius: 10 }}>
+                      <TouchableOpacity onPress={() => this.props.stack.navigation.navigate('Subscription')} style={{ marginTop: 15, marginBottom: 30, backgroundColor: '#f05458', height: 50, borderRadius: 10 }}>
                         <Text style={{ color: '#FFF', textAlign: 'center', lineHeight: 50, fontSize: 16 }}>Приобрести PRO-версию</Text>
                       </TouchableOpacity>
                     </View>
@@ -3138,7 +3141,7 @@ class Reader extends React.Component {
               </TouchableOpacity>
             }
 
-            <ModalNoAd visible={this.state.showNoAd} drawer={this.props.tabs} close={() => this.closeNoAdInfo()} />
+            <ModalNoAd visible={this.state.showNoAd} close={() => this.closeNoAdInfo()} />
 
             <ModalFastLearning
               visible={this.state.showTraining}
@@ -3162,6 +3165,7 @@ class Reader extends React.Component {
               close={() => this.closeTranslateWord()}
               openAuthModal={() => this.openAuthModal()}
               setWordInDictionary={(flag) => this.setWordInDictionary(flag)}
+              openSubscription={() => this.props.stack.navigation.navigate('Subscription')}
             />
 
             <View style={{
@@ -3381,42 +3385,6 @@ class Reader extends React.Component {
   }
 };
 
-class ModalAdInfo extends React.Component {
-  render(){
-    return(
-      <React.Fragment>
-        <View style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 10 }}>
-
-          <View style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            width: '100%',
-            backgroundColor: "#FFF",
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-          }}>
-
-
-            <View style={{ padding: 30 }}>
-              <Text style={{ fontSize: 17 }}>
-                Чтобы приложение было бесплатным, мы вынуждены показывать рекламу. {"\n"} {"\n"}Вы можете приобрести PRO-версию, чтобы отключить рекламу, а еще будет доступен режим чтения без интернета.
-              </Text>
-
-              <TouchableOpacity onPress={() => this.props.showAd()} style={{ marginTop: 30, backgroundColor: '#75b641', height: 50, borderRadius: 10 }}>
-                <Text style={{ color: '#FFF', textAlign: 'center', lineHeight: 50, fontSize: 16 }}>Смотреть рекламу</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={() => this.props.tabs.navigation.navigate('Subscription')} style={{ marginTop: 15, marginBottom: 30, backgroundColor: '#f05458', height: 50, borderRadius: 10 }}>
-                <Text style={{ color: '#FFF', textAlign: 'center', lineHeight: 50, fontSize: 16 }}>Приобрести PRO-версию</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </React.Fragment>
-    )
-  }
-}
 class ModalFastLearning extends React.Component {
   render(){
     return(
@@ -3850,7 +3818,7 @@ class ModalTranslateWord extends React.Component {
 
                     <TouchableOpacity onPress={() => this.deleteWordFromDictionary()}>
                       <View style={{ borderWidth: 1, borderColor: '#ddd', margin: 10, marginTop: 0, height: 32, width: 230, flexDirection: 'column', justifyContent: 'center', borderRadius: 5 }}>
-                        <Text style={{ color: '#444', lineHeight: 32, textAlign: 'center' }}>Удалить из словаря</Text>
+                        <Text style={{ color: '#444', lineHeight: 30, textAlign: 'center' }}>Удалить из словаря</Text>
                       </View>
                     </TouchableOpacity>
                   </React.Fragment>
@@ -3860,20 +3828,22 @@ class ModalTranslateWord extends React.Component {
                       {this.state.count_words < 30 ? (
                         <TouchableOpacity onPress={() => this.addWordToDictionary()}>
                           <View style={{ flex: 1, width: this.props.has_subscription ? 230 : 198, borderWidth: 1, borderColor: '#ddd', height: 32, flexDirection: 'column', justifyContent: 'center', borderRadius: 5 }}>
-                            <Text style={{ color: '#444', lineHeight: 32, textAlign: 'center' }}>Добавить в словарь</Text>
+                            <Text style={{ color: '#444', lineHeight: 30, textAlign: 'center' }}>Добавить в словарь</Text>
                           </View>
                         </TouchableOpacity>
                       ) : (
-                        <View style={{ flex: 1, width: this.props.has_subscription ? 230 : 198, height: 34, flexDirection: 'column', justifyContent: 'center', borderRadius: 5 }}>
-                          <Text style={{ color: '#444', lineHeight: 34, textAlign: 'center' }}>Вы исчерпали лимит</Text>
+                        <View style={{ flex: 1, width: this.props.has_subscription ? 230 : 198, height: 32, flexDirection: 'column', justifyContent: 'center', borderRadius: 5 }}>
+                          <Text style={{ color: '#444', lineHeight: 30, textAlign: 'center' }}>Вы исчерпали лимит</Text>
                         </View>
                       )}
                       {this.props.has_subscription == false &&
                         <TouchableOpacity onPress={() => this.setState({ show_limits_information: !this.state.show_limits_information })}>
-                          <View style={{ width: 24, height: 24, margin: 6, borderWidth: 1, borderColor: '#ddd', borderRadius: 4 }}>
-                            <Text style={{ fontSize: 14, color: '#aaa', width: 24, lineHeight: 24, textAlign: 'center' }}>
-                              {this.state.show_limits_information ? ('X') : ('?')}
-                            </Text>
+                          <View style={{ width: 24, height: 24, margin: 6, borderWidth: 1, borderColor: '#ddd', borderRadius: 4, overflow: 'hidden' }}>
+                            {this.state.show_limits_information ? (
+                              <Image style={{ width: 22, height: 22}} source={require('./app/images/books/dictionary_info_close.png')} />
+                            ) : (
+                              <Image style={{ width: 22, height: 22 }} source={require('./app/images/books/dictionary_info.png')} />
+                            )}
                           </View>
                         </TouchableOpacity>
                       }
@@ -3881,12 +3851,16 @@ class ModalTranslateWord extends React.Component {
 
                     {this.state.show_limits_information &&
                       <View style={{ margin: 10, marginTop: 0 }}>
-                        <View><Text style={{ marginTop: 4, textAlign: 'center', fontSize: 12 }}>Без PRO-доступа вы можете</Text></View>
+                        <View><Text style={{ textAlign: 'center', fontSize: 12 }}>Без PRO-доступа вы можете</Text></View>
                         <View><Text style={{ marginTop: 4, textAlign: 'center', fontSize: 12 }}>добавить до 30 слов</Text></View>
                         <View><Text style={{ marginTop: 4, textAlign: 'center', fontSize: 12 }}>и озвучить до 15 слов в день</Text></View>
 
                         <View><Text style={{ marginTop: 8, textAlign: 'center', fontSize: 12 }}>Вы добавили {this.state.count_words}/30</Text></View>
                         <View><Text style={{ marginTop: 4, textAlign: 'center', fontSize: 12 }}>Вы озвучили {this.state.count_voiceover}/15</Text></View>
+
+                        <TouchableOpacity onPress={() => this.props.openSubscription()}>
+                          <Text style={{ color: '#f05458', fontSize: 12, marginTop: 4, textAlign: 'center', }}>Приобрести PRO-доступ</Text>
+                        </TouchableOpacity>
                       </View>
                     }
                   </React.Fragment>
@@ -4319,15 +4293,17 @@ class RootApp extends React.Component {
       error_description: '',
       type_payment: Platform.OS === 'ios' ? 'by_store' : 'by_yoo_kassa'
     }
+
+    this.notification_timer;
   }
 
   async componentDidMount() {
     if (Platform.OS == 'ios') {
-        RNIap.setup({ storekitMode: 'STOREKIT_HYBRID_MODE' })
+      RNIap.setup({ storekitMode: 'STOREKIT_HYBRID_MODE' })
 
-        await RNIap.initConnection();
-        await RNIap.getSubscriptions({ skus: ['read_1_month', 'read_6_month', 'read_1_year'] });
-        await RNIap.getProducts({ skus: ['read_forever'] });
+      await RNIap.initConnection();
+      await RNIap.getSubscriptions({ skus: ['read_1_month', 'read_6_month', 'read_1_year'] });
+      await RNIap.getProducts({ skus: ['read_forever'] });
     }
 
     var current_user = await new Storage().get('current_user');
@@ -4350,15 +4326,15 @@ class RootApp extends React.Component {
         has_internet: state.isConnected,
       });
     });
-     
+
     if (await new Storage().get('openAppFirst') == undefined) {
       new Storage().set('openAppFirst', 'true');
 
       YandexMetrica.sendEvent('openAppFirst', {
         platform: Platform.OS,
       });
-    }else{
-      this.check_location();
+    } else {
+      //this.check_location();
 
       YandexMetrica.sendEvent('openAppNotFirst', {
         platform: Platform.OS,
@@ -4509,7 +4485,10 @@ class RootApp extends React.Component {
       error_description: description,
     });
 
-    setTimeout(() => {
+    console.log(title + ' ' + description);
+
+    clearTimeout(this.notification_timer);
+    this.notification_timer = setTimeout(() => {
       this.setState({
         error_show: false
       });
@@ -4579,24 +4558,6 @@ class RootApp extends React.Component {
           </View>
         ) : (
           <React.Fragment>
-            {this.state.error_show == true &&
-              <TouchableOpacity onPress={() => this.closeError()} style={applicationStyles.error_request}>
-                <View style={applicationStyles.error_request_texts}>
-                  <Text style={applicationStyles.error_request_text}>
-                    {this.state.error_title}
-                  </Text>
-
-                  {this.state.error_description != undefined &&
-                    <Text style={applicationStyles.error_request_text}>
-                      {this.state.error_description}
-                    </Text>
-                  }
-                </View>
-                <View style={applicationStyles.error_request_icon}>
-                  <Image source={require('./app/images/layouts/error_close.png')} style={applicationStyles.error_request_icon_image} />
-                </View>
-              </TouchableOpacity>
-            }
             <NavigationContainer>
               <Stack.Navigator initialRouteName="Home">
                 <Stack.Screen name="Home" options={() => ({ headerShown: false })}>
@@ -4637,9 +4598,27 @@ class RootApp extends React.Component {
                 </Stack.Screen>
               </Stack.Navigator>
             </NavigationContainer>
+
+            {this.state.error_show == true &&
+              <TouchableOpacity onPress={() => this.closeError()} style={applicationStyles.error_request}>
+                <View style={applicationStyles.error_request_texts}>
+                  <Text style={applicationStyles.error_request_text}>
+                    {this.state.error_title}
+                  </Text>
+
+                  {this.state.error_description != undefined &&
+                    <Text style={applicationStyles.error_request_text}>
+                      {this.state.error_description}
+                    </Text>
+                  }
+                </View>
+                <View style={applicationStyles.error_request_icon}>
+                  <Image source={require('./app/images/layouts/error_close.png')} style={applicationStyles.error_request_icon_image} />
+                </View>
+              </TouchableOpacity>
+            }
           </React.Fragment>
-        )
-        }
+        )}
       </React.Fragment>
     );
   }
@@ -5603,6 +5582,23 @@ class Subscription extends React.Component {
                     </View>
                     <Text style={{ textAlign: 'center', fontSize: 16 }}>Чтение</Text>
                     <Text style={{ textAlign: 'center', fontSize: 16 }}>без интернета</Text>
+                  </View>
+                </View>
+
+                <View style={{ flexDirection: 'row', marginTop: 20, marginBottom: 15 }}>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+                      <Image style={{ width: 50, height: 50, marginBottom: 10 }} source={require('./app/images/subscrition/dictionary.png')} />
+                    </View>
+                    <Text style={{ textAlign: 'center', fontSize: 16 }}>Словарь</Text>
+                    <Text style={{ textAlign: 'center', fontSize: 16 }}>без ограничений</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+                      <Image style={{ width: 50, height: 50, marginBottom: 10 }} source={require('./app/images/subscrition/voiceover.png')} />
+                    </View>
+                    <Text style={{ textAlign: 'center', fontSize: 16 }}>Озвучка слов</Text>
+                    <Text style={{ textAlign: 'center', fontSize: 16 }}>без ограничений</Text>
                   </View>
                 </View>
 
