@@ -69,6 +69,8 @@ class Bookmarks extends React.Component {
             }, {
               do_not_show_error: true
             }).post();
+            storage_bookmark.offline = false;
+            await new Storage().set('bookmark_' + storage_bookmark.book_id, JSON.stringify(storage_bookmark));
           } else {
             ar_delete_keys.push('bookmark_' + storage_bookmark.book_id);
           }

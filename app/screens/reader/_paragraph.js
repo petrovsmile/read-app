@@ -40,18 +40,7 @@ class Paragraph extends React.PureComponent {
           desciption_error: 'Закладка удалена только с этого устройства.'
         }).delete();
       } else {
-        await new Storage().set('bookmark_' + this.props.book_id, JSON.stringify({
-          book_id: this.props.book_id,
-          book_name: this.props.book_name,
-          page: this.props.page,
-          paragraph: this.props.data['name'],
-          offline: !this.props.has_internet
-        }));
-        await this.addBookmarkToKeys('bookmark_' + this.props.book_id);
-
-        await this.props.setBookmark(this.props.data['name']);
-
-        await new Request('/api/v1/bookmarks', {
+        var add_to_server = await new Request('/api/v1/bookmarks', {
           book_id: this.props.book_id,
           user_id: this.props.current_user.id,
           page: this.props.page,
@@ -59,6 +48,17 @@ class Paragraph extends React.PureComponent {
         }, {
           desciption_error: 'Закладка добавлена только на этом устройстве.'
         }).post();
+
+        await new Storage().set('bookmark_' + this.props.book_id, JSON.stringify({
+          book_id: this.props.book_id,
+          book_name: this.props.book_name,
+          page: this.props.page,
+          paragraph: this.props.data['name'],
+          offline: add_to_server == false
+        }));
+        await this.addBookmarkToKeys('bookmark_' + this.props.book_id);
+
+        await this.props.setBookmark(this.props.data['name']);
       }
 
     }

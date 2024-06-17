@@ -66,9 +66,6 @@ class Dictionary extends React.Component {
     }).get();
 
     if (server_words != false) {
-
-      console.log(server_words);
-
       var ar_delete_keys = [];
       var ar_add_keys = [];
 
@@ -88,6 +85,9 @@ class Dictionary extends React.Component {
             }, {
               do_not_show_error: true
             }).post();
+            storage_word.offline = false;
+            
+            await new Storage().set('word_' + storage_word.original, JSON.stringify(storage_word));
           } else {
             ar_delete_keys.push('word_' + storage_word.original);
           }

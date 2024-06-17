@@ -7,7 +7,6 @@ class Request {
     } else {
       this.options = options;
     }
-
   }
 
   async get() {
@@ -26,19 +25,27 @@ class Request {
     return await this.makeRequest('delete');
   }
 
+  AbortSignal(timeoutMs) {
+    const abortController = new AbortController();
+    setTimeout(() => abortController.abort(), timeoutMs || 0);
+  
+    return abortController.signal;
+  }
+
   async makeRequest(method) {
     if (root_app.state.has_internet) {
-      var url = HOST + this.url;
+      let url = HOST + this.url;
 
       try {
         if (method == 'get') {
-          var response = await axios.get(url, { params: this.params });
+          var response = await axios.get(url, { signal: this.AbortSignal(5000), params: this.params });
         }
 
         if (method == 'post') {
           var response = await axios.post(url,
             this.params,
             {
+              signal: this.AbortSignal(5000),
               headers: { Authorization: `Bearer ${API_TOKEN}` }
             }
           );
@@ -48,6 +55,7 @@ class Request {
           var response = await axios.put(url,
             this.params,
             {
+              signal: this.AbortSignal(5000),
               headers: { Authorization: `Bearer ${API_TOKEN}` }
             }
           );
@@ -56,6 +64,7 @@ class Request {
         if (method == 'delete') {
           var response = await axios.delete(url,
             {
+              signal: this.AbortSignal(5000),
               headers: { Authorization: `Bearer ${API_TOKEN}` },
               data: this.params
             },
@@ -68,7 +77,7 @@ class Request {
           return response.data;
         }
 
-      } catch (error) {
+      } catch (e) {
         if (this.options.do_not_show_error != true) {
           root_app.showError('Ошибка подключения к серверу', this.options.desciption_error);
         }

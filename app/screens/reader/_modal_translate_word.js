@@ -102,11 +102,18 @@ class ModalTranslateWord extends React.Component {
     } else {
       YandexMetrica.sendEvent('addWordToDictionary', { word: this.props.original });
 
+      var add_to_server = await new Request('/api/v1/dictionary/words', {
+        original: this.props.original,
+        user_id: this.props.current_user.id
+      }, {
+        desciption_error: 'Слово добавлено только на этом устройстве.'
+      }).post();
+
       await new Storage().set('word_' + this.props.original, JSON.stringify({
         original: this.props.original,
         transcription: this.props.transcription,
         translate: this.props.translate,
-        offline: !this.props.has_internet
+        offline: add_to_server == false
       }));
       await this.addWordToKeys('word_' + this.props.original);
 
@@ -115,13 +122,6 @@ class ModalTranslateWord extends React.Component {
       this.setState({
         count_words: this.state.count_words + 1
       });
-
-      await new Request('/api/v1/dictionary/words', {
-        original: this.props.original,
-        user_id: this.props.current_user.id
-      }, {
-        desciption_error: 'Слово добавлено только на этом устройстве.'
-      }).post();
     }
   }
 

@@ -507,7 +507,6 @@ class Request {
     } else {
       this.options = options;
     }
-
   }
 
   async get() {
@@ -526,19 +525,27 @@ class Request {
     return await this.makeRequest('delete');
   }
 
+  AbortSignal(timeoutMs) {
+    const abortController = new AbortController();
+    setTimeout(() => abortController.abort(), timeoutMs || 0);
+  
+    return abortController.signal;
+  }
+
   async makeRequest(method) {
     if (root_app.state.has_internet) {
-      var url = HOST + this.url;
+      let url = HOST + this.url;
 
       try {
         if (method == 'get') {
-          var response = await axios.get(url, { params: this.params });
+          var response = await axios.get(url, { signal: this.AbortSignal(5000), params: this.params });
         }
 
         if (method == 'post') {
           var response = await axios.post(url,
             this.params,
             {
+              signal: this.AbortSignal(5000),
               headers: { Authorization: `Bearer ${API_TOKEN}` }
             }
           );
@@ -548,6 +555,7 @@ class Request {
           var response = await axios.put(url,
             this.params,
             {
+              signal: this.AbortSignal(5000),
               headers: { Authorization: `Bearer ${API_TOKEN}` }
             }
           );
@@ -556,6 +564,7 @@ class Request {
         if (method == 'delete') {
           var response = await axios.delete(url,
             {
+              signal: this.AbortSignal(5000),
               headers: { Authorization: `Bearer ${API_TOKEN}` },
               data: this.params
             },
@@ -568,7 +577,7 @@ class Request {
           return response.data;
         }
 
-      } catch (error) {
+      } catch (e) {
         if (this.options.do_not_show_error != true) {
           root_app.showError('Ошибка подключения к серверу', this.options.desciption_error);
         }
@@ -677,6 +686,8 @@ class Bookmarks extends React.Component {
             }, {
               do_not_show_error: true
             }).post();
+            storage_bookmark.offline = false;
+            await new Storage().set('bookmark_' + storage_bookmark.book_id, JSON.stringify(storage_bookmark));
           } else {
             ar_delete_keys.push('bookmark_' + storage_bookmark.book_id);
           }
@@ -1017,9 +1028,6 @@ class Dictionary extends React.Component {
     }).get();
 
     if (server_words != false) {
-
-      console.log(server_words);
-
       var ar_delete_keys = [];
       var ar_add_keys = [];
 
@@ -1039,6 +1047,9 @@ class Dictionary extends React.Component {
             }, {
               do_not_show_error: true
             }).post();
+            storage_word.offline = false;
+            
+            await new Storage().set('word_' + storage_word.original, JSON.stringify(storage_word));
           } else {
             ar_delete_keys.push('word_' + storage_word.original);
           }
@@ -3657,11 +3668,18 @@ class ModalTranslateWord extends React.Component {
     } else {
       YandexMetrica.sendEvent('addWordToDictionary', { word: this.props.original });
 
+      var add_to_server = await new Request('/api/v1/dictionary/words', {
+        original: this.props.original,
+        user_id: this.props.current_user.id
+      }, {
+        desciption_error: 'Слово добавлено только на этом устройстве.'
+      }).post();
+
       await new Storage().set('word_' + this.props.original, JSON.stringify({
         original: this.props.original,
         transcription: this.props.transcription,
         translate: this.props.translate,
-        offline: !this.props.has_internet
+        offline: add_to_server == false
       }));
       await this.addWordToKeys('word_' + this.props.original);
 
@@ -3670,13 +3688,6 @@ class ModalTranslateWord extends React.Component {
       this.setState({
         count_words: this.state.count_words + 1
       });
-
-      await new Request('/api/v1/dictionary/words', {
-        original: this.props.original,
-        user_id: this.props.current_user.id
-      }, {
-        desciption_error: 'Слово добавлено только на этом устройстве.'
-      }).post();
     }
   }
 
@@ -3925,18 +3936,7 @@ class Paragraph extends React.PureComponent {
           desciption_error: 'Закладка удалена только с этого устройства.'
         }).delete();
       } else {
-        await new Storage().set('bookmark_' + this.props.book_id, JSON.stringify({
-          book_id: this.props.book_id,
-          book_name: this.props.book_name,
-          page: this.props.page,
-          paragraph: this.props.data['name'],
-          offline: !this.props.has_internet
-        }));
-        await this.addBookmarkToKeys('bookmark_' + this.props.book_id);
-
-        await this.props.setBookmark(this.props.data['name']);
-
-        await new Request('/api/v1/bookmarks', {
+        var add_to_server = await new Request('/api/v1/bookmarks', {
           book_id: this.props.book_id,
           user_id: this.props.current_user.id,
           page: this.props.page,
@@ -3944,6 +3944,17 @@ class Paragraph extends React.PureComponent {
         }, {
           desciption_error: 'Закладка добавлена только на этом устройстве.'
         }).post();
+
+        await new Storage().set('bookmark_' + this.props.book_id, JSON.stringify({
+          book_id: this.props.book_id,
+          book_name: this.props.book_name,
+          page: this.props.page,
+          paragraph: this.props.data['name'],
+          offline: add_to_server == false
+        }));
+        await this.addBookmarkToKeys('bookmark_' + this.props.book_id);
+
+        await this.props.setBookmark(this.props.data['name']);
       }
 
     }
