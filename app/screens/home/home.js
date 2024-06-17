@@ -182,7 +182,7 @@ class Home extends React.Component {
 
       var range_time = (now_time - time_show_review) / 1000 / 60;
 
-      if (range_time > 1) { //7200
+      if (range_time > 7200) { //7200
         YandexMetrica.sendEvent('reviewShow', { show: true });
         await new Storage().set('review_showed', 'true');
         StoreReview.requestReview();
