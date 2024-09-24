@@ -152,8 +152,8 @@ import * as StoreReview from 'react-native-store-review';
 // Appodeal.addEventListener(AppodealInterstitialEvent.SHOWN, () => {
 //   AsyncStorage.setItem('time_short_ad', moment().format());
 // });
-const CURRENT_IOS_VERSION = '1.1.8'
-const CURRENT_ANDROID_VERSION = '1.1.8'
+const CURRENT_IOS_VERSION = '1.2.0'
+const CURRENT_ANDROID_VERSION = '1.2.0'
 const BOOKS_FILENAME = 'books_v1.json'
 const POLICY_VERSION = 'v6'
 const HOST="https://read-en.ru"
@@ -957,563 +957,6 @@ class Bookmark extends React.Component {
           <Text style={{ width: 100, textAlign: 'right', lineHeight: 40, fontWeight: 'bold' }}>Стр. {this.bookmark.page}</Text>
         </TouchableOpacity>
       </View>
-    )
-  }
-}
-class Auth extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      method: 'login',
-      email: null,
-      password: null,
-      repeat_password: null,
-      securePassword: true,
-      error: false,
-      button_loader: false,
-      remember_password_thanks: false
-    }
-  }
-
-  componentDidMount() {
-    if (this.props.method != undefined) {
-      this.setState({
-        method: this.props.method
-      });
-    }
-  }
-
-  changeMethod(method) {
-    this.setState({
-      method: method,
-      button_loader: false,
-      error: false,
-      remember_password_thanks: false
-    });
-  }
-
-  async sendForm(method) {
-    if (this.state.button_loader == false) {
-      await this.setState({
-        button_loader: true
-      });
-
-      if (method == 'login') {
-        this.login();
-      }
-      if (method == 'reg') {
-        this.reg();
-      }
-      if (method == 'remember_password') {
-        this.remember_password();
-      }
-    }
-  }
-
-  async login() {
-    var response = await new Request('/api/v1/users/login', {
-      email: this.state.email,
-      password: this.state.password
-    }).get();
-
-    await this.setState({
-      button_loader: false
-    });
-
-    if (response == false) {
-      return false;
-    } else {
-      if (response['error'] != undefined) {
-        this.setState({
-          error: response['error']
-        });
-      } else {
-        await this.setState({
-          error: false
-        });
-
-        root_app.setState({
-          current_user: response
-        }); 
-
-        await new Storage().set('current_user', JSON.stringify(response));
-
-        root_app.checkSubscription();
-      }
-    }
-
-  }
-
-  async reg() {
-    var response = await new Request('/api/v1/users/registration', {
-      email: this.state.email,
-      password: this.state.password,
-      repeat_password: this.state.repeat_password
-    }).post();
-
-    await this.setState({
-      button_loader: false
-    });
-
-    if (response == false) {
-      return false;
-    } else {
-      if (response['error'] != undefined) {
-        this.setState({
-          error: response['error']
-        });
-      } else {
-        await this.setState({
-          error: false
-        });
-
-        root_app.setState({
-          current_user: response
-        });
-
-        await new Storage().set('current_user', JSON.stringify(response));
-      }
-    }
-  }
-
-  async remember_password() {
-    var response = await new Request('/api/v1/users/remember_password', {
-      email: this.state.email,
-      password: this.state.password,
-      repeat_password: this.state.repeat_password
-    }).post();
-
-    await this.setState({
-      button_loader: false
-    });
-
-    if (response == false) {
-      return false;
-    } else {
-      if (response['error'] != undefined) {
-        this.setState({
-          error: response['error']
-        });
-      } else {
-        await this.setState({
-          error: false
-        });
-
-        this.setState({
-          remember_password_thanks: true
-        });
-      }
-    }
-  }
-
-  render() {
-    return (
-      <SafeAreaView style={applicationStyles.save_area_view} >
-        <ScrollView>
-          {this.props.modal == true &&
-            <View style={{ height: 35, flexDirection: 'row', justifyContent: 'flex-end' }}>
-              <TouchableOpacity onPress={() => this.props.close()} style={{ width: 35, height: 35, backgroundColor: '#ddd', borderRadius: 7, margin: 10 }}>
-                <Image
-                  style={{ height: 20, width: 20, margin: 7.5 }}
-                  source={require('./app/images/header/right-menu-close.png')}
-                />
-              </TouchableOpacity>
-            </View>
-          }
-
-          <View style={profileStyles.content}>
-            {this.props.bookmark_info != undefined &&
-              <React.Fragment>
-                <Text style={bookmarksStyles.auth_into}>
-                  Для того чтобы воспользоваться закладками или словарем,
-                  необходимо
-                  <Text style={{ color: '#f05458' }}> авторизоваться </Text>
-                  или
-                  <Text style={{ color: '#f05458' }}> зарегистрироваться</Text>
-                </Text>
-              </React.Fragment>
-            }
-
-            {this.state.method == 'login' &&
-              <Text style={profileStyles.title}>Вход</Text>
-            }
-            {this.state.method == 'reg' &&
-              <Text style={profileStyles.title}>Регистрация</Text>
-            }
-            {this.state.method == 'remember_password' &&
-              <Text style={profileStyles.title}>Восстановить пароль</Text>
-            }
-
-            <View style={profileStyles.authorization_form_tabs}>
-              <View style={{ flex: 1, flexDirection: 'row' }}>
-                <TouchableOpacity onPress={() => this.changeMethod('login')} style={[
-                  profileStyles.authorization_form_tab,
-                  this.state.method == 'login' ? { backgroundColor: app_theme_colors.backgroundDarkLight } : null
-                ]}>
-                  <Text style={profileStyles.authorization_form_tab_text}>Вход</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => this.changeMethod('reg')} style={[
-                  profileStyles.authorization_form_tab,
-                  this.state.method == 'reg' ? { backgroundColor: app_theme_colors.backgroundDarkLight } : null
-                ]}>
-                  <Text style={profileStyles.authorization_form_tab_text}>Регистрация</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {this.state.remember_password_thanks ? (
-              <View style={profileStyles.remember_password_thanks}>
-                <Text style={profileStyles.remember_password_thanks_text}>Новый пароль отправлен на почту</Text>
-              </View>
-            ) : (
-              <React.Fragment>
-                {this.state.method == 'remember_password' &&
-                  <Text style={profileStyles.remember_password_info}>Новый пароль придет на почту</Text>
-                }
-
-                <View style={profileStyles.point_input}>
-                  <Text style={profileStyles.input_title}>E-mail</Text>
-                  <TextInput
-                    onChangeText={(value) => this.setState({ email: value })}
-                    style={profileStyles.input}
-                    placeholder={"E-mail"}
-                  />
-                </View>
-
-                {(this.state.method == 'login' || this.state.method == 'reg') &&
-                  <View style={profileStyles.point_input}>
-                    <Text style={profileStyles.input_title}>Пароль</Text>
-                    <TextInput
-                      secureTextEntry={this.state.securePassword}
-                      onChangeText={(value) => this.setState({ password: value })}
-                      style={profileStyles.input}
-                      placeholder={"Пароль"}
-                    />
-                    <TouchableOpacity onPress={() => this.setState({ securePassword: !this.state.securePassword })} style={profileStyles.button_password_hide}>
-                      {this.state.securePassword == true &&
-                        <Image source={require('./app/images/profile/auth/password_hide.png')} style={profileStyles.password_hide_image} />
-                      }
-                      {this.state.securePassword == false &&
-                        <Image source={require('./app/images/profile/auth/password_show.png')} style={profileStyles.password_hide_image} />
-                      }
-                    </TouchableOpacity>
-                  </View>
-                }
-
-                {this.state.method == 'reg' &&
-                  <View style={profileStyles.point_input}>
-                    <Text style={profileStyles.input_title}>Повторите пароль</Text>
-                    <TextInput
-                      secureTextEntry={this.state.securePassword}
-                      onChangeText={(value) => this.setState({ repeat_password: value })}
-                      style={profileStyles.input}
-                      placeholder={"Пароль"}
-                    />
-                    <TouchableOpacity onPress={() => this.setState({ securePassword: !this.state.securePassword })} style={profileStyles.button_password_hide}>
-                      {this.state.securePassword == true &&
-                        <Image source={require('./app/images/profile/auth/password_hide.png')} style={profileStyles.password_hide_image} />
-                      }
-                      {this.state.securePassword == false &&
-                        <Image source={require('./app/images/profile/auth/password_show.png')} style={profileStyles.password_hide_image} />
-                      }
-                    </TouchableOpacity>
-                  </View>
-                }
-
-                {this.state.error != false &&
-                  <Text style={profileStyles.error_block}>{this.state.error}</Text>
-                }
-
-                <TouchableOpacity onPress={() => this.sendForm(this.state.method)} style={profileStyles.form_button}>
-                  {this.state.button_loader == true &&
-                    <ActivityIndicator style={{ flex: 1 }} size="small" color="#FFF" />
-                  }
-
-                  {this.state.button_loader == false &&
-                    <React.Fragment>
-                      {this.state.method == 'login' &&
-                        <Text style={profileStyles.form_button_text}>Вход</Text>
-                      }
-                      {this.state.method == 'reg' &&
-                        <Text style={profileStyles.form_button_text}>Регистрация</Text>
-                      }
-                      {this.state.method == 'remember_password' &&
-                        <Text style={profileStyles.form_button_text}>Отправить</Text>
-                      }
-                    </React.Fragment>
-                  }
-                </TouchableOpacity>
-
-                {this.state.method == 'login' &&
-                  <TouchableOpacity onPress={() => this.changeMethod('remember_password')} style={profileStyles.button_remember_password}>
-                    <Text style={profileStyles.remember_password_text}>Забыли пароль?</Text>
-                  </TouchableOpacity>
-                }
-              </React.Fragment>
-            )}
-
-            <View style={{ height: 100 }}></View>
-
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    )
-  }
-}
-class Profile extends React.Component {
-  async log_out() {
-    await new Storage().remove('current_user');
-    await new Storage().set('has_subscription', 'false');
-
-    this.props.root.setState({
-      current_user: false,
-      has_subscription: false
-    });
-  }
-
-  render() {
-    return (
-      <SafeAreaView style={applicationStyles.save_area_view} >
-        {this.props.root.state.current_user == false ? (
-          <Auth />
-        ) : (
-          <ScrollView>
-            <View style={profileStyles.content}>
-              <Text style={[profileStyles.title, { marginTop: 15 }]}>Основная информация</Text>
-              <UpdateProfile current_user={this.props.root.state.current_user} />
-
-              <Text style={profileStyles.title}>Смена пароля</Text>
-              <ChangePassword current_user={this.props.root.state.current_user} />
-
-              <Text style={profileStyles.title}>Выход из аккаунта</Text>
-              <TouchableOpacity style={profileStyles.log_out_button} onPress={() => this.log_out()}>
-                <Text style={profileStyles.log_out_text}>Выход</Text>
-              </TouchableOpacity>
-
-              <Text style={profileStyles.title}>Удалить аккаунт</Text>
-
-              <Text style={{ marginTop: 15, marginBottom: 15 }}>Для того, чтобы полностью удалить аккаунт, перейдите по ссылке ниже: </Text>
-
-              <TouchableOpacity onPress={() => Linking.openURL("https://read-en.ru/profile/delete")}>
-                <Text style={{ color: app_theme_colors.red }}>Удаление аккаунта</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        )}
-      </SafeAreaView>
-    )
-  }
-}
-class ChangePassword extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      password: null,
-      repeat_password: null,
-      securePassword: true,
-      error: false,
-      success: false,
-    }
-  }
-
-  resetForm(){
-    this.setState({
-      password: null,
-      repeat_password: null,
-      securePassword: true,
-      error: false,
-      success: false,
-    });
-  }
-
-  async update() {
-    var response = await new Request('/api/v1/users/' + this.props.current_user.id + '/update_password', {
-      password: this.state.password,
-      repeat_password: this.state.repeat_password
-    }).put();
-
-    await this.setState({
-      button_loader: false
-    });
-
-    if (response == false) {
-      return false;
-    } else {
-      if (response['error'] != undefined) {
-        this.setState({
-          error: response['error']
-        });
-      } else {
-        await this.setState({
-          success: true,
-        });
-      }
-    }
-  }
-
-  render() {
-    return (
-      <React.Fragment>
-        {this.state.success == true ? (
-          <React.Fragment>
-            <View style={profileStyles.thanks_form}>
-              <Text style={profileStyles.thanks_form_title}>
-                Информация успешно обновлена
-              </Text>
-              <View style={profileStyles.thanks_form_button_parent}>
-                <TouchableOpacity onPress={()=>this.resetForm()} style={profileStyles.thanks_form_button}>
-                  <Text style={profileStyles.thanks_form_button_text}>Ok</Text>
-                </TouchableOpacity>
-              </View>
-              
-            </View>
-          </React.Fragment>
-        ): (
-          <React.Fragment>
-            <View style={profileStyles.point_input}>
-              <Text style={profileStyles.input_title}>Пароль</Text>
-              <TextInput
-                secureTextEntry={this.state.securePassword}
-                onChangeText={(value) => this.setState({ password: value })}
-                style={profileStyles.input}
-                placeholder={"Пароль"}
-              />
-              <TouchableOpacity onPress={() => this.setState({ securePassword: !this.state.securePassword })} style={profileStyles.button_password_hide}>
-                {this.state.securePassword == true &&
-                  <Image source={require('./app/images/profile/auth/password_hide.png')} style={profileStyles.password_hide_image} />
-                }
-                {this.state.securePassword == false &&
-                  <Image source={require('./app/images/profile/auth/password_show.png')} style={profileStyles.password_hide_image} />
-                }
-              </TouchableOpacity>
-            </View>
-
-            <View style={profileStyles.point_input}>
-              <Text style={profileStyles.input_title}>Повторите пароль</Text>
-              <TextInput
-                secureTextEntry={this.state.securePassword}
-                onChangeText={(value) => this.setState({ repeat_password: value })}
-                style={profileStyles.input}
-                placeholder={"Пароль"}
-              />
-              <TouchableOpacity onPress={() => this.setState({ securePassword: !this.state.securePassword })} style={profileStyles.button_password_hide}>
-                {this.state.securePassword == true &&
-                  <Image source={require('./app/images/profile/auth/password_hide.png')} style={profileStyles.password_hide_image} />
-                }
-                {this.state.securePassword == false &&
-                  <Image source={require('./app/images/profile/auth/password_show.png')} style={profileStyles.password_hide_image} />
-                }
-              </TouchableOpacity>
-            </View>
-
-            {this.state.error != false &&
-              <Text style={profileStyles.error_block}>{this.state.error}</Text>
-            }
-
-            <TouchableOpacity style={profileStyles.form_button} onPress={() => this.update()}>
-              {this.state.button_loader == true ? (
-                <ActivityIndicator style={{ flex: 1 }} size="small" color="#FFF" />
-              ) : (
-                <Text style={profileStyles.form_button_text}>Обновить</Text>
-              )}
-            </TouchableOpacity>
-          </React.Fragment>
-        )}
-      </React.Fragment>
-    )
-  }
-}
-class UpdateProfile extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      email: this.props.current_user.email,
-      error: false,
-      success: false,
-    }
-  }
-
-  resetForm() {
-    this.setState({
-      password: null,
-      repeat_password: null,
-      securePassword: true,
-      error: false,
-      success: false,
-    });
-  }
-
-  async update() {
-    var response = await new Request('/api/v1/users/' + this.props.current_user.id, {
-      email: this.state.email,
-    }).put();
-
-    await this.setState({
-      button_loader: false
-    });
-
-    if (response == false) {
-      return false;
-    } else {
-      if (response['error'] != undefined) {
-        this.setState({
-          error: response['error']
-        });
-      } else {
-        await this.setState({
-          success: true,
-        });
-      }
-    }
-  }
-
-  render() {
-    return (
-      <React.Fragment>
-        {this.state.success == true ? (
-          <React.Fragment>
-            <View style={profileStyles.thanks_form}>
-              <Text style={profileStyles.thanks_form_title}>
-                Информация успешно обновлена
-              </Text>
-              <View style={profileStyles.thanks_form_button_parent}>
-                <TouchableOpacity onPress={() => this.resetForm()} style={profileStyles.thanks_form_button}>
-                  <Text style={profileStyles.thanks_form_button_text}>Ok</Text>
-                </TouchableOpacity>
-              </View>
-
-            </View>
-          </React.Fragment>
-        ) : (
-          <React.Fragment>
-
-            <View style={profileStyles.point_input}>
-              <Text style={profileStyles.input_title}>E-mail</Text>
-              <TextInput
-                onChangeText={(value) => this.setState({ email: value })}
-                style={profileStyles.input}
-                placeholder={"E-mail"}
-                value={this.state.email}
-              />
-            </View>
-
-            {this.state.error != false &&
-              <Text style={profileStyles.error_block}>{this.state.error}</Text>
-            }
-
-            <TouchableOpacity style={profileStyles.form_button} onPress={() => this.update()}>
-              {this.state.button_loader == true ? (
-                <ActivityIndicator style={{ flex: 1 }} size="small" color="#FFF" />
-              ) : (
-                <Text style={profileStyles.form_button_text}>Обновить</Text>
-              )}
-            </TouchableOpacity>
-          </React.Fragment>
-        )}
-      </React.Fragment>
     )
   }
 }
@@ -2436,6 +1879,563 @@ class Book extends React.Component {
 
         </TouchableOpacity>
       </View>
+    )
+  }
+}
+class Auth extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      method: 'login',
+      email: null,
+      password: null,
+      repeat_password: null,
+      securePassword: true,
+      error: false,
+      button_loader: false,
+      remember_password_thanks: false
+    }
+  }
+
+  componentDidMount() {
+    if (this.props.method != undefined) {
+      this.setState({
+        method: this.props.method
+      });
+    }
+  }
+
+  changeMethod(method) {
+    this.setState({
+      method: method,
+      button_loader: false,
+      error: false,
+      remember_password_thanks: false
+    });
+  }
+
+  async sendForm(method) {
+    if (this.state.button_loader == false) {
+      await this.setState({
+        button_loader: true
+      });
+
+      if (method == 'login') {
+        this.login();
+      }
+      if (method == 'reg') {
+        this.reg();
+      }
+      if (method == 'remember_password') {
+        this.remember_password();
+      }
+    }
+  }
+
+  async login() {
+    var response = await new Request('/api/v1/users/login', {
+      email: this.state.email,
+      password: this.state.password
+    }).get();
+
+    await this.setState({
+      button_loader: false
+    });
+
+    if (response == false) {
+      return false;
+    } else {
+      if (response['error'] != undefined) {
+        this.setState({
+          error: response['error']
+        });
+      } else {
+        await this.setState({
+          error: false
+        });
+
+        root_app.setState({
+          current_user: response
+        }); 
+
+        await new Storage().set('current_user', JSON.stringify(response));
+
+        root_app.checkSubscription();
+      }
+    }
+
+  }
+
+  async reg() {
+    var response = await new Request('/api/v1/users/registration', {
+      email: this.state.email,
+      password: this.state.password,
+      repeat_password: this.state.repeat_password
+    }).post();
+
+    await this.setState({
+      button_loader: false
+    });
+
+    if (response == false) {
+      return false;
+    } else {
+      if (response['error'] != undefined) {
+        this.setState({
+          error: response['error']
+        });
+      } else {
+        await this.setState({
+          error: false
+        });
+
+        root_app.setState({
+          current_user: response
+        });
+
+        await new Storage().set('current_user', JSON.stringify(response));
+      }
+    }
+  }
+
+  async remember_password() {
+    var response = await new Request('/api/v1/users/remember_password', {
+      email: this.state.email,
+      password: this.state.password,
+      repeat_password: this.state.repeat_password
+    }).post();
+
+    await this.setState({
+      button_loader: false
+    });
+
+    if (response == false) {
+      return false;
+    } else {
+      if (response['error'] != undefined) {
+        this.setState({
+          error: response['error']
+        });
+      } else {
+        await this.setState({
+          error: false
+        });
+
+        this.setState({
+          remember_password_thanks: true
+        });
+      }
+    }
+  }
+
+  render() {
+    return (
+      <SafeAreaView style={applicationStyles.save_area_view} >
+        <ScrollView>
+          {this.props.modal == true &&
+            <View style={{ height: 35, flexDirection: 'row', justifyContent: 'flex-end' }}>
+              <TouchableOpacity onPress={() => this.props.close()} style={{ width: 35, height: 35, backgroundColor: '#ddd', borderRadius: 7, margin: 10 }}>
+                <Image
+                  style={{ height: 20, width: 20, margin: 7.5 }}
+                  source={require('./app/images/header/right-menu-close.png')}
+                />
+              </TouchableOpacity>
+            </View>
+          }
+
+          <View style={profileStyles.content}>
+            {this.props.bookmark_info != undefined &&
+              <React.Fragment>
+                <Text style={bookmarksStyles.auth_into}>
+                  Для того чтобы воспользоваться закладками или словарем,
+                  необходимо
+                  <Text style={{ color: '#f05458' }}> авторизоваться </Text>
+                  или
+                  <Text style={{ color: '#f05458' }}> зарегистрироваться</Text>
+                </Text>
+              </React.Fragment>
+            }
+
+            {this.state.method == 'login' &&
+              <Text style={profileStyles.title}>Вход</Text>
+            }
+            {this.state.method == 'reg' &&
+              <Text style={profileStyles.title}>Регистрация</Text>
+            }
+            {this.state.method == 'remember_password' &&
+              <Text style={profileStyles.title}>Восстановить пароль</Text>
+            }
+
+            <View style={profileStyles.authorization_form_tabs}>
+              <View style={{ flex: 1, flexDirection: 'row' }}>
+                <TouchableOpacity onPress={() => this.changeMethod('login')} style={[
+                  profileStyles.authorization_form_tab,
+                  this.state.method == 'login' ? { backgroundColor: app_theme_colors.backgroundDarkLight } : null
+                ]}>
+                  <Text style={profileStyles.authorization_form_tab_text}>Вход</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => this.changeMethod('reg')} style={[
+                  profileStyles.authorization_form_tab,
+                  this.state.method == 'reg' ? { backgroundColor: app_theme_colors.backgroundDarkLight } : null
+                ]}>
+                  <Text style={profileStyles.authorization_form_tab_text}>Регистрация</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {this.state.remember_password_thanks ? (
+              <View style={profileStyles.remember_password_thanks}>
+                <Text style={profileStyles.remember_password_thanks_text}>Новый пароль отправлен на почту</Text>
+              </View>
+            ) : (
+              <React.Fragment>
+                {this.state.method == 'remember_password' &&
+                  <Text style={profileStyles.remember_password_info}>Новый пароль придет на почту</Text>
+                }
+
+                <View style={profileStyles.point_input}>
+                  <Text style={profileStyles.input_title}>E-mail</Text>
+                  <TextInput
+                    onChangeText={(value) => this.setState({ email: value })}
+                    style={profileStyles.input}
+                    placeholder={"E-mail"}
+                  />
+                </View>
+
+                {(this.state.method == 'login' || this.state.method == 'reg') &&
+                  <View style={profileStyles.point_input}>
+                    <Text style={profileStyles.input_title}>Пароль</Text>
+                    <TextInput
+                      secureTextEntry={this.state.securePassword}
+                      onChangeText={(value) => this.setState({ password: value })}
+                      style={profileStyles.input}
+                      placeholder={"Пароль"}
+                    />
+                    <TouchableOpacity onPress={() => this.setState({ securePassword: !this.state.securePassword })} style={profileStyles.button_password_hide}>
+                      {this.state.securePassword == true &&
+                        <Image source={require('./app/images/profile/auth/password_hide.png')} style={profileStyles.password_hide_image} />
+                      }
+                      {this.state.securePassword == false &&
+                        <Image source={require('./app/images/profile/auth/password_show.png')} style={profileStyles.password_hide_image} />
+                      }
+                    </TouchableOpacity>
+                  </View>
+                }
+
+                {this.state.method == 'reg' &&
+                  <View style={profileStyles.point_input}>
+                    <Text style={profileStyles.input_title}>Повторите пароль</Text>
+                    <TextInput
+                      secureTextEntry={this.state.securePassword}
+                      onChangeText={(value) => this.setState({ repeat_password: value })}
+                      style={profileStyles.input}
+                      placeholder={"Пароль"}
+                    />
+                    <TouchableOpacity onPress={() => this.setState({ securePassword: !this.state.securePassword })} style={profileStyles.button_password_hide}>
+                      {this.state.securePassword == true &&
+                        <Image source={require('./app/images/profile/auth/password_hide.png')} style={profileStyles.password_hide_image} />
+                      }
+                      {this.state.securePassword == false &&
+                        <Image source={require('./app/images/profile/auth/password_show.png')} style={profileStyles.password_hide_image} />
+                      }
+                    </TouchableOpacity>
+                  </View>
+                }
+
+                {this.state.error != false &&
+                  <Text style={profileStyles.error_block}>{this.state.error}</Text>
+                }
+
+                <TouchableOpacity onPress={() => this.sendForm(this.state.method)} style={profileStyles.form_button}>
+                  {this.state.button_loader == true &&
+                    <ActivityIndicator style={{ flex: 1 }} size="small" color="#FFF" />
+                  }
+
+                  {this.state.button_loader == false &&
+                    <React.Fragment>
+                      {this.state.method == 'login' &&
+                        <Text style={profileStyles.form_button_text}>Вход</Text>
+                      }
+                      {this.state.method == 'reg' &&
+                        <Text style={profileStyles.form_button_text}>Регистрация</Text>
+                      }
+                      {this.state.method == 'remember_password' &&
+                        <Text style={profileStyles.form_button_text}>Отправить</Text>
+                      }
+                    </React.Fragment>
+                  }
+                </TouchableOpacity>
+
+                {this.state.method == 'login' &&
+                  <TouchableOpacity onPress={() => this.changeMethod('remember_password')} style={profileStyles.button_remember_password}>
+                    <Text style={profileStyles.remember_password_text}>Забыли пароль?</Text>
+                  </TouchableOpacity>
+                }
+              </React.Fragment>
+            )}
+
+            <View style={{ height: 100 }}></View>
+
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    )
+  }
+}
+class Profile extends React.Component {
+  async log_out() {
+    await new Storage().remove('current_user');
+    await new Storage().set('has_subscription', 'false');
+
+    this.props.root.setState({
+      current_user: false,
+      has_subscription: false
+    });
+  }
+
+  render() {
+    return (
+      <SafeAreaView style={applicationStyles.save_area_view} >
+        {this.props.root.state.current_user == false ? (
+          <Auth />
+        ) : (
+          <ScrollView>
+            <View style={profileStyles.content}>
+              <Text style={[profileStyles.title, { marginTop: 15 }]}>Основная информация</Text>
+              <UpdateProfile current_user={this.props.root.state.current_user} />
+
+              <Text style={profileStyles.title}>Смена пароля</Text>
+              <ChangePassword current_user={this.props.root.state.current_user} />
+
+              <Text style={profileStyles.title}>Выход из аккаунта</Text>
+              <TouchableOpacity style={profileStyles.log_out_button} onPress={() => this.log_out()}>
+                <Text style={profileStyles.log_out_text}>Выход</Text>
+              </TouchableOpacity>
+
+              <Text style={profileStyles.title}>Удалить аккаунт</Text>
+
+              <Text style={{ marginTop: 15, marginBottom: 15 }}>Для того, чтобы полностью удалить аккаунт, перейдите по ссылке ниже: </Text>
+
+              <TouchableOpacity onPress={() => Linking.openURL("https://read-en.ru/profile/delete")}>
+                <Text style={{ color: app_theme_colors.red }}>Удаление аккаунта</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        )}
+      </SafeAreaView>
+    )
+  }
+}
+class ChangePassword extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      password: null,
+      repeat_password: null,
+      securePassword: true,
+      error: false,
+      success: false,
+    }
+  }
+
+  resetForm(){
+    this.setState({
+      password: null,
+      repeat_password: null,
+      securePassword: true,
+      error: false,
+      success: false,
+    });
+  }
+
+  async update() {
+    var response = await new Request('/api/v1/users/' + this.props.current_user.id + '/update_password', {
+      password: this.state.password,
+      repeat_password: this.state.repeat_password
+    }).put();
+
+    await this.setState({
+      button_loader: false
+    });
+
+    if (response == false) {
+      return false;
+    } else {
+      if (response['error'] != undefined) {
+        this.setState({
+          error: response['error']
+        });
+      } else {
+        await this.setState({
+          success: true,
+        });
+      }
+    }
+  }
+
+  render() {
+    return (
+      <React.Fragment>
+        {this.state.success == true ? (
+          <React.Fragment>
+            <View style={profileStyles.thanks_form}>
+              <Text style={profileStyles.thanks_form_title}>
+                Информация успешно обновлена
+              </Text>
+              <View style={profileStyles.thanks_form_button_parent}>
+                <TouchableOpacity onPress={()=>this.resetForm()} style={profileStyles.thanks_form_button}>
+                  <Text style={profileStyles.thanks_form_button_text}>Ok</Text>
+                </TouchableOpacity>
+              </View>
+              
+            </View>
+          </React.Fragment>
+        ): (
+          <React.Fragment>
+            <View style={profileStyles.point_input}>
+              <Text style={profileStyles.input_title}>Пароль</Text>
+              <TextInput
+                secureTextEntry={this.state.securePassword}
+                onChangeText={(value) => this.setState({ password: value })}
+                style={profileStyles.input}
+                placeholder={"Пароль"}
+              />
+              <TouchableOpacity onPress={() => this.setState({ securePassword: !this.state.securePassword })} style={profileStyles.button_password_hide}>
+                {this.state.securePassword == true &&
+                  <Image source={require('./app/images/profile/auth/password_hide.png')} style={profileStyles.password_hide_image} />
+                }
+                {this.state.securePassword == false &&
+                  <Image source={require('./app/images/profile/auth/password_show.png')} style={profileStyles.password_hide_image} />
+                }
+              </TouchableOpacity>
+            </View>
+
+            <View style={profileStyles.point_input}>
+              <Text style={profileStyles.input_title}>Повторите пароль</Text>
+              <TextInput
+                secureTextEntry={this.state.securePassword}
+                onChangeText={(value) => this.setState({ repeat_password: value })}
+                style={profileStyles.input}
+                placeholder={"Пароль"}
+              />
+              <TouchableOpacity onPress={() => this.setState({ securePassword: !this.state.securePassword })} style={profileStyles.button_password_hide}>
+                {this.state.securePassword == true &&
+                  <Image source={require('./app/images/profile/auth/password_hide.png')} style={profileStyles.password_hide_image} />
+                }
+                {this.state.securePassword == false &&
+                  <Image source={require('./app/images/profile/auth/password_show.png')} style={profileStyles.password_hide_image} />
+                }
+              </TouchableOpacity>
+            </View>
+
+            {this.state.error != false &&
+              <Text style={profileStyles.error_block}>{this.state.error}</Text>
+            }
+
+            <TouchableOpacity style={profileStyles.form_button} onPress={() => this.update()}>
+              {this.state.button_loader == true ? (
+                <ActivityIndicator style={{ flex: 1 }} size="small" color="#FFF" />
+              ) : (
+                <Text style={profileStyles.form_button_text}>Обновить</Text>
+              )}
+            </TouchableOpacity>
+          </React.Fragment>
+        )}
+      </React.Fragment>
+    )
+  }
+}
+class UpdateProfile extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      email: this.props.current_user.email,
+      error: false,
+      success: false,
+    }
+  }
+
+  resetForm() {
+    this.setState({
+      password: null,
+      repeat_password: null,
+      securePassword: true,
+      error: false,
+      success: false,
+    });
+  }
+
+  async update() {
+    var response = await new Request('/api/v1/users/' + this.props.current_user.id, {
+      email: this.state.email,
+    }).put();
+
+    await this.setState({
+      button_loader: false
+    });
+
+    if (response == false) {
+      return false;
+    } else {
+      if (response['error'] != undefined) {
+        this.setState({
+          error: response['error']
+        });
+      } else {
+        await this.setState({
+          success: true,
+        });
+      }
+    }
+  }
+
+  render() {
+    return (
+      <React.Fragment>
+        {this.state.success == true ? (
+          <React.Fragment>
+            <View style={profileStyles.thanks_form}>
+              <Text style={profileStyles.thanks_form_title}>
+                Информация успешно обновлена
+              </Text>
+              <View style={profileStyles.thanks_form_button_parent}>
+                <TouchableOpacity onPress={() => this.resetForm()} style={profileStyles.thanks_form_button}>
+                  <Text style={profileStyles.thanks_form_button_text}>Ok</Text>
+                </TouchableOpacity>
+              </View>
+
+            </View>
+          </React.Fragment>
+        ) : (
+          <React.Fragment>
+
+            <View style={profileStyles.point_input}>
+              <Text style={profileStyles.input_title}>E-mail</Text>
+              <TextInput
+                onChangeText={(value) => this.setState({ email: value })}
+                style={profileStyles.input}
+                placeholder={"E-mail"}
+                value={this.state.email}
+              />
+            </View>
+
+            {this.state.error != false &&
+              <Text style={profileStyles.error_block}>{this.state.error}</Text>
+            }
+
+            <TouchableOpacity style={profileStyles.form_button} onPress={() => this.update()}>
+              {this.state.button_loader == true ? (
+                <ActivityIndicator style={{ flex: 1 }} size="small" color="#FFF" />
+              ) : (
+                <Text style={profileStyles.form_button_text}>Обновить</Text>
+              )}
+            </TouchableOpacity>
+          </React.Fragment>
+        )}
+      </React.Fragment>
     )
   }
 }
@@ -3836,7 +3836,7 @@ class ModalTranslateWord extends React.Component {
                 ) : (
                   <React.Fragment>
                     <View style={{ flexDirection: 'row', height: 32, width: 230, margin: 10, marginTop: 10, alignItems: 'center' }}>
-                      {this.state.count_words < 30 ? (
+                      {(this.state.count_words < 30 || this.props.has_subscription) ? (
                         <TouchableOpacity onPress={() => this.addWordToDictionary()}>
                           <View style={{ flex: 1, width: this.props.has_subscription ? 230 : 198, borderWidth: 1, borderColor: '#ddd', height: 32, flexDirection: 'column', justifyContent: 'center', borderRadius: 5 }}>
                             <Text style={{ color: '#444', lineHeight: 30, textAlign: 'center' }}>Добавить в словарь</Text>

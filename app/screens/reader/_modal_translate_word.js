@@ -270,7 +270,7 @@ class ModalTranslateWord extends React.Component {
                 ) : (
                   <React.Fragment>
                     <View style={{ flexDirection: 'row', height: 32, width: 230, margin: 10, marginTop: 10, alignItems: 'center' }}>
-                      {this.state.count_words < 30 ? (
+                      {(this.state.count_words < 30 || this.props.has_subscription) ? (
                         <TouchableOpacity onPress={() => this.addWordToDictionary()}>
                           <View style={{ flex: 1, width: this.props.has_subscription ? 230 : 198, borderWidth: 1, borderColor: '#ddd', height: 32, flexDirection: 'column', justifyContent: 'center', borderRadius: 5 }}>
                             <Text style={{ color: '#444', lineHeight: 30, textAlign: 'center' }}>Добавить в словарь</Text>
