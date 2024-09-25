@@ -4778,21 +4778,12 @@ class TargetVersion extends React.Component {
   }
 
   compareVersions() {
-    var current_1 = parseInt(this.current_version.split('.')[0]);
-    var current_2 = parseInt(this.current_version.split('.')[1]);
-    var current_3 = parseInt(this.current_version.split('.')[2]);
-
-    var target_1 = parseInt(this.target_version.split('.')[0]);
-    var target_2 = parseInt(this.target_version.split('.')[1]);
-    var target_3 = parseInt(this.target_version.split('.')[2]);
+    var current = parseInt(this.current_version.split('.').join(''));
+    var target = parseInt(this.target_version.split('.').join(''));
 
     var check = true;
 
-    if (current_1 < target_1) {
-      check = false;
-    } else if (current_2 < target_2) {
-      check = false;
-    } else if (current_3 < target_3) {
+    if (target > current) {
       check = false;
     }
 
