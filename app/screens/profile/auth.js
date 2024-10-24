@@ -20,6 +20,10 @@ class Auth extends React.Component {
         method: this.props.method
       });
     }
+
+    // Linking.addEventListener('url', (e)=>{
+    //   Alert.alert('opened');
+    // });
   }
 
   changeMethod(method) {
