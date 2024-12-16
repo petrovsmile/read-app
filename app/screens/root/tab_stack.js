@@ -8,7 +8,7 @@ class TabStack extends React.Component {
 
 
     return (
-      <Tab.Navigator initialRouteName="Books"
+      <Tab.Navigator initialRouteName="Profile"
         screenOptions={({ route }) => ({
           tabBarActiveTintColor: '#f05458'
         })}>

@@ -14,16 +14,32 @@ class Auth extends React.Component {
     }
   }
 
-  componentDidMount() {
+  async componentDidMount() {
     if (this.props.method != undefined) {
       this.setState({
         method: this.props.method
       });
     }
 
-    // Linking.addEventListener('url', (e)=>{
-    //   Alert.alert('opened');
-    // });
+
+
+    Linking.addEventListener('url', async (e) => {
+      let token = e.url.split('token=')[1].split('/')[0];
+
+      let response = await new Request('/api/v1/users/by_oauth_token', {
+        token: token,
+      }).get();
+
+      if (response['error'] != undefined) {
+        this.setState({
+          error: response['error']
+        });
+      } else {
+        root_app.setState({
+          current_user: response
+        });
+      }
+    });
   }
 
   changeMethod(method) {
@@ -77,7 +93,7 @@ class Auth extends React.Component {
 
         root_app.setState({
           current_user: response
-        }); 
+        });
 
         await new Storage().set('current_user', JSON.stringify(response));
 
@@ -147,6 +163,21 @@ class Auth extends React.Component {
         });
       }
     }
+  }
+
+  socialLink(type){
+    let link;
+    if(type == 'vk'){
+      link = "https://oauth.vk.com/authorize?scope=email&client_id=52070548&redirect_uri="+HOST+"/oauth_app/vkontakte"
+    }
+    if(type == 'yandex'){
+      link = "https://oauth.yandex.ru/authorize?response_type=code&client_id=1af05aae68ba486aa812aef9740bd74b&redirect_uri="+HOST+"/oauth_app/yandex"
+    }
+    if(type == 'google'){
+      link = "https://accounts.google.com/o/oauth2/auth?redirect_uri="+HOST+"/oauth_app/google&response_type=code&client_id=379352911930-2neobku7ji043lh0s22ifegfgunascon.apps.googleusercontent.com&scope=https://www.googleapis.com/auth/userinfo.email"
+    }
+
+    Linking.openURL(link);
   }
 
   render() {
@@ -292,6 +323,21 @@ class Auth extends React.Component {
                     <Text style={profileStyles.remember_password_text}>Забыли пароль?</Text>
                   </TouchableOpacity>
                 }
+
+                <Text style={{ textAlign: 'center', marginTop: 24 }}>
+                  Войти через соц. сети
+                </Text>
+                <View style={{ flex: 1, justifyContent: 'center', flexDirection: 'row', marginTop: 16 }}>
+                  <TouchableOpacity style={{ width: 40, height: 40, backgroundColor: '#0077FF', borderRadius: 4, justifyContent: 'center', alignItems: 'center' }} onPress={()=>this.socialLink('vk')}>
+                    <Image style={{ width: 24, height: 24 }} source={require('./app/images/profile/auth/socials/vk.png')} />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={{ width: 40, height: 40, backgroundColor: '#f9d657', borderRadius: 4, marginLeft: 16, justifyContent: 'center', alignItems: 'center' }}  onPress={()=>this.socialLink('yandex')}>
+                    <Image style={{ width: 24, height: 24 }} source={require('./app/images/profile/auth/socials/ya.png')} />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={{ width: 40, height: 40, backgroundColor: '#df432f', borderRadius: 4, marginLeft: 16, justifyContent: 'center', alignItems: 'center' }}  onPress={()=>this.socialLink('google')}>
+                    <Image style={{ width: 24, height: 24 }} source={require('./app/images/profile/auth/socials/google.png')} />
+                  </TouchableOpacity>
+                </View>
               </React.Fragment>
             )}
 
