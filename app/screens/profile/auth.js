@@ -21,8 +21,6 @@ class Auth extends React.Component {
       });
     }
 
-
-
     Linking.addEventListener('url', async (e) => {
       let token = e.url.split('token=')[1].split('/')[0];
 
