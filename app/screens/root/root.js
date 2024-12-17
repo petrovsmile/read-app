@@ -64,18 +64,6 @@ class RootApp extends React.Component {
         platform: Platform.OS,
       });
     }
-
-    this.auth_by_deep_link();
-  }
-
-  auth_by_deep_link(){
-    Linking.addEventListener('url', (e)=>{
-      let token = e.url.split('?token=')[1];
-      
-      if(token!=undefined){
-        console.log(token);
-      }
-    });
   }
 
   async check_location() {
