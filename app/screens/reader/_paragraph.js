@@ -1,3 +1,5 @@
+var Tts = require('react-native-tts');
+
 class Paragraph extends React.PureComponent {
   constructor(props) {
     super(props);
@@ -5,6 +7,14 @@ class Paragraph extends React.PureComponent {
     this.state = {
       sentences: false,
       paragraph_translate: [],
+    }
+  }
+
+  speakSentence(sentence) {
+    var text = (sentence['b'] || []).map(function (b) { return b['v'] || ''; }).join('');
+    if (text && text.trim()) {
+      Tts.stop();
+      Tts.speak(text.trim());
     }
   }
 
@@ -154,6 +164,12 @@ class Paragraph extends React.PureComponent {
             <View style={{ width: 15 }}></View>
             {this.props.data['sentences'].map((sentence, index) =>
               <React.Fragment key={index}>
+                <TouchableOpacity onPress={() => this.speakSentence(sentence)} style={{ marginTop: 5, marginRight: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Image
+                    style={{ width: root_reader.state.translate_icon_size, height: root_reader.state.translate_icon_size }}
+                    source={require('./app/images/reader/voiceover.png')}
+                  />
+                </TouchableOpacity>
                 {sentence['b'].map((block, index) => {
 
                   var past_value = "";

@@ -36,6 +36,8 @@ class Auth extends React.Component {
         root_app.setState({
           current_user: response
         });
+        await new Storage().set('current_user', JSON.stringify(response));
+        root_app.checkSubscription();
       }
     });
   }
