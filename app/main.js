@@ -36,11 +36,34 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
+// --- expo-file-system (replaces react-native-fs) ---
+import * as FileSystem from 'expo-file-system';
 
-var RNFS = require('react-native-fs');
+var RNFS = {
+  DocumentDirectoryPath: FileSystem.documentDirectory.replace(/\/$/, ''),
+  readFile: async (path, encoding) => {
+    return await FileSystem.readAsStringAsync(path, {
+      encoding: encoding === 'utf8' ? FileSystem.EncodingType.UTF8 : undefined,
+    });
+  },
+  writeFile: async (path, content, encoding) => {
+    return await FileSystem.writeAsStringAsync(path, content, {
+      encoding: encoding === 'utf8' ? FileSystem.EncodingType.UTF8 : undefined,
+    });
+  },
+  exists: async (path) => {
+    const info = await FileSystem.getInfoAsync(path);
+    return info.exists;
+  },
+  mkdir: async (path) => {
+    return await FileSystem.makeDirectoryAsync(path, { intermediates: true });
+  },
+  unlink: async (path) => {
+    return await FileSystem.deleteAsync(path, { idempotent: true });
+  },
+};
 
 var file_root = RNFS.DocumentDirectoryPath;
-//console.log(file_root);  
 
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -48,107 +71,79 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Slider from '@react-native-community/slider';
 import NetInfo from "@react-native-community/netinfo";
 
-import RNRestart from 'react-native-restart';
-
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 
 import * as RNIap from 'react-native-iap';
-
-import { requestTrackingPermission } from 'react-native-tracking-transparency';
 
 import { MobileAds, BannerView, InterstitialAdManager, RewardedAdManager } from 'react-native-yandex-mobile-ads';
 
 MobileAds.initialize({ userConsent: true, locationConsent: true });
 
-import { NativeModules } from 'react-native';
-const { YandexMetrica } = NativeModules;
-var Sound = require('react-native-sound');
-Sound.setCategory('Playback');
+// --- @appmetrica/react-native-analytics (replaces NativeModules.YandexMetrica) ---
+import AppMetrica from '@appmetrica/react-native-analytics';
 
-import * as StoreReview from 'react-native-store-review';
+AppMetrica.activate({ apiKey: 'c810cef0-e69a-4201-81ce-35e3d0e8ce8d' });
 
+var YandexMetrica = {
+  sendEvent: (name, params) => {
+    try {
+      AppMetrica.reportEvent(name, params ? JSON.stringify(params) : undefined);
+    } catch (e) {
+      // silently ignore analytics errors
+    }
+  },
+};
 
-// import {
-//   Appodeal,
-//   AppodealSdkEvent,
-//   AppodealAdType,
-//   AppodealRewardedEvent,
-//   AppodealInterstitialEvent,
-//   AppodealLogLevel,
-// } from 'react-native-appodeal';
+// --- expo-av (replaces react-native-sound) ---
+import { Audio } from 'expo-av';
 
-// const adTypes = AppodealAdType.INTERSTITIAL | AppodealAdType.REWARDED_VIDEO;
-// if (Platform.OS === 'ios') {
-//   Appodeal.initialize('789aac74edf2a69bbe79c2183ffde03ce5b23177b2ac3689', adTypes, true);
-// } else {
-//   Appodeal.initialize('f4edf7b5ae1c5a9b440881471997c45c6e28f2f31ac7bd54', adTypes, true);
-// }
+Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
 
-//Appodeal.setLogLevel(AppodealLogLevel.DEBUG);
+class Sound {
+  constructor(url, basePath, onLoad) {
+    this._sound = null;
+    this._loaded = false;
+    Audio.Sound.createAsync({ uri: url })
+      .then(({ sound }) => {
+        this._sound = sound;
+        this._loaded = true;
+        if (onLoad) onLoad(null);
+      })
+      .catch((error) => {
+        if (onLoad) onLoad(error);
+      });
+  }
 
+  play(onEnd) {
+    if (this._sound) {
+      this._sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.didJustFinish) {
+          if (onEnd) onEnd(true);
+          this._sound.unloadAsync();
+        }
+      });
+      this._sound
+        .playAsync()
+        .catch(() => {
+          if (onEnd) onEnd(false);
+        });
+    }
+  }
 
-// Appodeal.addEventListener(AppodealSdkEvent.INITIALIZED, () => {
-//   //console.log("Appodeal SDK did initialize");
-// });
+  release() {
+    if (this._sound) {
+      this._sound.unloadAsync();
+    }
+  }
 
+  static setCategory() {
+    // no-op, handled by Audio.setAudioModeAsync
+  }
+}
 
-// Appodeal.addEventListener(AppodealRewardedEvent.REWARD, (event: any) => {
-//   if (root_reader != undefined) {
-//     //AppMetrica.reportEvent('adEvent',{status: 'REWARD'});    
-//     if (root_reader.state.showAdOpacity == true) {
-//       root_reader.setState({
-//         showAdOpacity: false,
-//       });
-//       AsyncStorage.setItem('time_ad', moment().format());
-//       root_reader.openPage(false);
-//     }
-//   }
-// });
+// --- expo-store-review (replaces react-native-store-review) ---
+import * as ExpoStoreReview from 'expo-store-review';
 
-// Appodeal.addEventListener(AppodealRewardedEvent.CLOSED, () => {
-//   if (root_reader != undefined) {
-//     if (root_reader.state.showAdOpacity == true) {
-//       root_reader.setState({
-//         showAdOpacity: false,
-//       });
-//       root_reader.openPage(false);
-//     }
-//   }
-// });
-
-// Appodeal.addEventListener(AppodealRewardedEvent.FAILED_TO_LOAD, () => {
-//   if (root_reader != undefined) {
-//     //AppMetrica.reportEvent('adEvent',{status: 'FAILED_TO_LOAD'});    
-//     if (root_reader.state.showAdOpacity == true) {
-//       root_reader.setState({
-//         showAdOpacity: false,
-//       });
-//       if (root_reader.state.showNoAd == false) {
-//         root_reader.setState({
-//           showNoAd: true,
-//         });
-//       }
-//       root_reader.openPage(false);
-//     }
-//   }
-// });
-// Appodeal.addEventListener(AppodealRewardedEvent.FAILED_TO_SHOW, () => {
-//   if (root_reader != undefined) {
-//     //AppMetrica.reportEvent('adEvent',{status: 'FAILED_TO_SHOW'});    
-//     if (root_reader.state.showAdOpacity == true) {
-//       root_reader.setState({
-//         showAdOpacity: false,
-//       });
-//       if (root_reader.state.showNoAd == false) {
-//         root_reader.setState({
-//           showNoAd: true,
-//         });
-//       }
-//       root_reader.openPage(false);
-//     }
-//   }
-// });
-
-// Appodeal.addEventListener(AppodealInterstitialEvent.SHOWN, () => {
-//   AsyncStorage.setItem('time_short_ad', moment().format());
-// });
+var StoreReview = {
+  requestReview: () => ExpoStoreReview.requestReview(),
+};

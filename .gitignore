@@ -65,3 +65,9 @@ yarn-error.log
 # testing
 /coverage
 App.js
+
+# Expo
+/android/
+/ios/
+.expo/
+dist/

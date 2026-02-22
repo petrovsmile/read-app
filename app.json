@@ -1,4 +1,6 @@
 {
-  "name": "read_en",
-  "displayName": "Read"
+  "expo": {
+    "name": "Read",
+    "slug": "read-en"
+  }
 }
