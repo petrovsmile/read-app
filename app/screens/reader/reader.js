@@ -1,12 +1,9 @@
-var root_reader;
-var list_words;
 var scroll_percent = 0;
 
 
 class Reader extends React.Component {
   constructor(props) {
     super(props);
-    root_reader = this;
 
     this.state = {
       current_page: null,
@@ -43,7 +40,9 @@ class Reader extends React.Component {
 
       bookmark: false,
 
-      word_in_dictionary: false
+      word_in_dictionary: false,
+
+      ttsVoice: false,
     };
 
     this.modalTranslateWordOriginal = null;
@@ -101,6 +100,20 @@ class Reader extends React.Component {
       settings = JSON.parse(settings);
     }
 
+    var ttsVoice = await new Storage().get('ttsVoice');
+
+    if (!ttsVoice) {
+      try {
+        var allVoices = await Tts.voices();
+        var englishVoices = allVoices.filter(function(v) { return v.language && v.language.startsWith('en') && v.notInstalled !== true; });
+        if (englishVoices.length > 0) {
+          ttsVoice = englishVoices[0].id;
+          Tts.setDefaultVoice(ttsVoice);
+          new Storage().set('ttsVoice', ttsVoice);
+        }
+      } catch(e) {}
+    }
+
     await this.setState({
       translate_icon_size: settings['translate_icon_size'],
       fontSize: settings['fontSize'],
@@ -109,7 +122,13 @@ class Reader extends React.Component {
       textColorTheme: settings['textColorTheme'],
       secondColorTheme: settings['secondColorTheme'],
       fontFamily: settings['fontFamily'],
+      ttsVoice: ttsVoice || false,
     });
+
+    readerStore.setThemeSettings(settings);
+    readerStore.setBookmark(this.state.bookmark);
+    readerStore.setPage(this.state.page);
+    if (ttsVoice) readerStore.setTtsVoice(ttsVoice);
 
     if (this.have_file == true) {
       var words = await RNFS.readFile(file_root + '/books/' + this.props.stack.route.params.book_id + '/words.json');
@@ -122,7 +141,7 @@ class Reader extends React.Component {
       var pagination = await new Request('/books/' + this.props.stack.route.params.book_id + '/result/pagination.json', {}, {}).get();
     }
 
-    list_words = words;
+    readerStore.setListWords(words);
 
     if (this.props.stack.route.params.bookmark == undefined) {
       var page = await new Storage().get('page_' + this.props.stack.route.params.book_id);
@@ -155,7 +174,8 @@ class Reader extends React.Component {
     this.setState({
       paragraphs: false,
     });
-    list_words = null;
+    readerStore.clearListWords();
+    clearTimeout(this._scrollRestoreTimer);
   }
 
   async openPage(first_load) {
@@ -185,26 +205,30 @@ class Reader extends React.Component {
 
       this.goBookUp(this.props.stack.route.params.book_id);
 
+      var pageItems = pagination[this.state.page];
+      var bookId = this.props.stack.route.params.book_id;
       var paragraphs = [];
-
-      for (const i in pagination[this.state.page]) {
-
-        if (this.have_file == true) {
-          var response = await RNFS.readFile(file_root + '/books/' + this.props.stack.route.params.book_id + '/paragraphs/' + pagination[this.state.page][i] + '.json');
-          var sentences = JSON.parse(response);
-        } else {
-          var sentences = await new Request('/books/' + this.props.stack.route.params.book_id + '/result/paragraphs/' + pagination[this.state.page][i] + '.json', {}, {}).get();
-        }
-
-        if (sentences != false) {
-          paragraphs.push({
-            name: pagination[this.state.page][i],
-            sentences: sentences,
-          });
-        }
+      var batchSize = 3;
+      for (var i = 0; i < pageItems.length; i += batchSize) {
+        var batch = pageItems.slice(i, i + batchSize);
+        var results = await Promise.all(batch.map(async (paragraphId) => {
+          if (this.have_file == true) {
+            var response = await RNFS.readFile(file_root + '/books/' + bookId + '/paragraphs/' + paragraphId + '.json');
+            return { name: paragraphId, sentences: JSON.parse(response) };
+          } else {
+            var sentences = await new Request('/books/' + bookId + '/result/paragraphs/' + paragraphId + '.json', {}, {}).get();
+            return sentences !== false ? { name: paragraphId, sentences: sentences } : null;
+          }
+        }));
+        results.forEach(function(p) { if (p !== null) paragraphs.push(p); });
       }
 
       if (paragraphs.length != 0) {
+        if (this.props.root.state.has_subscription == false) {
+          if (paragraphs.length > 3) paragraphs.splice(3, 0, { _type: 'ad', _key: 'ad_3' });
+          if (paragraphs.length > 8) paragraphs.splice(8, 0, { _type: 'ad', _key: 'ad_8' });
+        }
+
         await this.setState({
           paragraphs: paragraphs,
           show_list: true,
@@ -213,8 +237,10 @@ class Reader extends React.Component {
         if (first_load == true && this.props.stack.route.params.bookmark == undefined) {
           var scroll = await new Storage().get('scroll_' + this.props.stack.route.params.book_id);
 
-          setTimeout(() => {
-            this.scrollView.scrollTo({ x: 0, y: parseInt(scroll), animated: false });
+          this._scrollRestoreTimer = setTimeout(() => {
+            if (this.flatListRef) {
+              this.flatListRef.scrollToOffset({ offset: parseInt(scroll), animated: false });
+            }
           });
         }
       }
@@ -261,7 +287,7 @@ class Reader extends React.Component {
       if (range_time < 30) {
         this.openPage(false);
       } else {
-        if (root_app.show_subsription == true) {
+        if (appStore.show_subsription == true) {
           this.showAdInfo();
         } else {
           this.showAd();
@@ -316,27 +342,27 @@ class Reader extends React.Component {
     RewardedAdManager.showAd('R-M-1281415-13')
       .then((resp) => {
 
-        if (root_reader.state.showAdOpacity == true) {
-          root_reader.setState({
+        if (this.state.showAdOpacity == true) {
+          this.setState({
             showAdOpacity: false,
           });
           new Storage().set('time_ad', moment().format());
-          root_reader.openPage(false);
+          this.openPage(false);
         }
 
       })
       .catch((error: any) => {
 
-        if (root_reader.state.showAdOpacity == true) {
-          root_reader.setState({
+        if (this.state.showAdOpacity == true) {
+          this.setState({
             showAdOpacity: false,
           });
-          if (root_reader.state.showNoAd == false) {
-            root_reader.setState({
+          if (this.state.showNoAd == false) {
+            this.setState({
               showNoAd: true,
             });
           }
-          root_reader.openPage(false);
+          this.openPage(false);
         }
 
       });
@@ -406,6 +432,7 @@ class Reader extends React.Component {
 
 
   setBookmark(value) {
+    readerStore.setBookmark(value);
     this.setState({
       bookmark: value,
     });
@@ -461,6 +488,7 @@ class Reader extends React.Component {
             fontFamily: fontFamily,
             show_list: true,
           });
+          readerStore.setThemeSettings({ fontFamily: fontFamily });
         });
 
       });
@@ -486,6 +514,11 @@ class Reader extends React.Component {
             textColorTheme: textColor,
             secondColorTheme: secondColor,
             show_list: true,
+          });
+          readerStore.setThemeSettings({
+            backgroundColorTheme: backgroundColor,
+            textColorTheme: textColor,
+            secondColorTheme: secondColor,
           });
         });
       });
@@ -525,6 +558,7 @@ class Reader extends React.Component {
             show_list: true,
             textAlign: nowTextAlign,
           });
+          readerStore.setThemeSettings({ textAlign: nowTextAlign });
         });
 
       });
@@ -575,6 +609,7 @@ class Reader extends React.Component {
             translate_icon_size: translate_icon_size,
             show_list: true,
           });
+          readerStore.setThemeSettings({ fontSize: newFontSize, translate_icon_size: translate_icon_size });
         });
       });
     });
@@ -589,13 +624,14 @@ class Reader extends React.Component {
       this.paragraphsCoords = paragraphsCoords;
 
       if (Object.keys(this.paragraphsCoords).length == this.state.paragraphs.length) {
-        await this.scrollView.scrollTo({
-          x: 0,
-          y: parseInt(
-            this.paragraphsCoords[this.props.stack.route.params.bookmark.paragraph]
-          ),
-          animated: false
-        });
+        if (this.flatListRef) {
+          this.flatListRef.scrollToOffset({
+            offset: parseInt(
+              this.paragraphsCoords[this.props.stack.route.params.bookmark.paragraph]
+            ),
+            animated: false
+          });
+        }
         this.setPercent();
       }
     }
@@ -624,10 +660,47 @@ class Reader extends React.Component {
     }
   }
 
+  changeVoice(voiceId) {
+    Tts.setDefaultVoice(voiceId);
+    new Storage().set('ttsVoice', voiceId);
+    this.setState({ ttsVoice: voiceId });
+  }
+
   setWordInDictionary(word_in_dictionary) {
     this.setState({
       word_in_dictionary: word_in_dictionary
     });
+  }
+
+  renderParagraphItem({item}) {
+    if (item._type === 'ad') {
+      return (
+        <View style={readerScreenStyles.adContainer}>
+          <BannerView
+            adUnitId={'R-M-1281415-12'}
+            size="BANNER_300x250"
+          />
+        </View>
+      );
+    }
+    return (
+      <View onLayout={(event) => this.checkBookmakScroll(event, item.name)}>
+        <Paragraph
+          data={item}
+          openTranslateSentence={(value) => this.translateSentence(value)}
+          openTranslateWord={(o, tr, ts) => this.openTranslateWord(o, tr, ts)}
+          openAuthModal={() => this.openAuthModal()}
+          setBookmark={(value) => this.setBookmark(value)}
+          current_user={this.props.root.state.current_user}
+          page={this.state.page}
+          book_name={this.book_name}
+          book_name_en={this.book_name_en}
+          book_id={this.props.stack.route.params.book_id}
+          percent={this.state.percent}
+          has_internet={this.props.root.state.has_internet}
+        />
+      </View>
+    );
   }
 
   render() {
@@ -833,68 +906,42 @@ class Reader extends React.Component {
 
                 fontFamily={this.state.fontFamily}
                 chanageFontFamily={(fontFamily) => this.chanageFontFamily(fontFamily)}
+
+                ttsVoice={this.state.ttsVoice}
+                changeVoice={(voiceId) => this.changeVoice(voiceId)}
               />
 
             </View>
 
-            <View
-              style={{
-                flex: 1,
-                position: 'relative',
-                zIndex: 1,
-              }}>
+            <View style={readerScreenStyles.readerContainer}>
               {this.state.show_list &&
-                <ScrollView
-                  ref={(scrollView) => this.scrollView = scrollView}
-                  scrollEventThrottle={8}
+                <FlatList
+                  ref={(ref) => this.flatListRef = ref}
+                  data={this.state.paragraphs}
+                  keyExtractor={(item) => item._type === 'ad' ? item._key : 'p_' + item.name}
+                  renderItem={(itemInfo) => this.renderParagraphItem(itemInfo)}
+                  initialNumToRender={5}
+                  maxToRenderPerBatch={3}
+                  windowSize={7}
                   onScroll={(event) => this.onScroll(event)}
                   onScrollEndDrag={(event) => this.onScrollEndDrag(event)}
+                  scrollEventThrottle={8}
+                  ListFooterComponent={<View style={readerScreenStyles.footerSpacer} />}
                   style={{ flex: 1 }}
-                >
-                  {this.state.paragraphs.map((paragraph, index) =>
-                    <React.Fragment key={index}>
-                      {
-                        this.props.root.state.has_subscription == false && (index == 3 || index == 7) &&
-                        <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', height: 250, marginTop: 20 }}>
-                          <BannerView
-                            adUnitId={'R-M-1281415-12'}
-                            size="BANNER_300x250"
-                          />
-                        </View>
-                      }
-                      <View onLayout={(event) => this.checkBookmakScroll(event, paragraph['name'])}>
-                        <Paragraph
-                          data={paragraph}
-                          openTranslateSentence={(value) => this.translateSentence(value)}
-                          openTranslateWord={(o, tr, ts) => this.openTranslateWord(o, tr, ts)}
-                          openAuthModal={() => this.openAuthModal()}
-                          setBookmark={(value) => this.setBookmark(value)}
-                          current_user={this.props.root.state.current_user}
-                          page={this.state.page}
-                          book_name={this.book_name}
-                          book_name_en={this.book_name_en}
-                          book_id={this.props.stack.route.params.book_id}
-                          percent={this.state.percent}
-                          has_internet={this.props.root.state.has_internet}
-                        />
-                      </View>
-                    </React.Fragment>
-                  )}
-                  <View style={{ height: 50 }}></View>
-                </ScrollView>
+                />
               }
             </View>
 
-            <View style={{ height: 50, flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: this.state.secondColorTheme }}>
+            <View style={[readerScreenStyles.footerNav, { borderTopWidth: 1, borderTopColor: this.state.secondColorTheme }]}>
 
               {this.state.page > 1 &&
-                <TouchableOpacity onPress={() => this.prevPage()} style={{ padding: 10 }}>
+                <TouchableOpacity onPress={() => this.prevPage()} style={readerScreenStyles.navButton}>
                   {this.state.textColorTheme == '#ffffff' &&
-                    <Image style={{ width: 30, height: 30 }}
+                    <Image style={readerScreenStyles.navArrow}
                       source={require('./app/images/header/arrow-left-white.png')} />
                   }
                   {this.state.textColorTheme == '#000000' &&
-                    <Image style={{ width: 30, height: 30 }}
+                    <Image style={readerScreenStyles.navArrow}
                       source={require('./app/images/header/arrow-left.png')} />
                   }
                 </TouchableOpacity>

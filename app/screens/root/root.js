@@ -33,22 +33,27 @@ class RootApp extends React.Component {
     var current_user = await new Storage().get('current_user');
 
     if (current_user != undefined) {
+      var parsed_user = JSON.parse(current_user);
       await this.setState({
-        current_user: JSON.parse(current_user),
+        current_user: parsed_user,
       });
+      appStore.setCurrentUser(parsed_user);
     }
 
     var confirm_conditions = await new Storage().get('confirm_conditions_' + POLICY_VERSION);
+    var confirm_val = confirm_conditions == 'true';
     await this.setState({
-      confirm_conditions: confirm_conditions == 'true'
+      confirm_conditions: confirm_val
     });
+    appStore.setConfirmConditions(confirm_val);
 
     this.checkSubscription();
 
-    NetInfo.addEventListener(state => {
+    this._unsubNet = NetInfo.addEventListener(state => {
       this.setState({
         has_internet: state.isConnected,
       });
+      appStore.setInternet(state.isConnected);
     });
 
     if (await new Storage().get('openAppFirst') == undefined) {
@@ -66,6 +71,13 @@ class RootApp extends React.Component {
     }
   }
 
+  componentWillUnmount() {
+    if (this._unsubNet) {
+      this._unsubNet();
+    }
+    clearTimeout(this.notification_timer);
+  }
+
   async check_location() {
     var response = await new Request('/api/v1/users/context', {
     }, {
@@ -77,6 +89,7 @@ class RootApp extends React.Component {
         this.setState({
           type_payment: 'by_yoo_kassa'
         });
+        appStore.setTypePayment('by_yoo_kassa');
       }
     }
   }
@@ -103,6 +116,8 @@ class RootApp extends React.Component {
       has_subscription: has_subscription == 'true',
       subscription_info: subscription_info
     });
+    appStore.setSubscription(has_subscription == 'true');
+    appStore.setSubscriptionInfo(subscription_info);
 
     if (this.type_payment == 'by_store') {
       var purchases = await RNIap.getPurchaseHistory({ skus: ['read_1_month', 'read_6_month', 'read_1_year', 'read_forever'] });
@@ -150,6 +165,8 @@ class RootApp extends React.Component {
             subscription_info: subscription_info,
             has_subscription: true,
           });
+          appStore.setSubscription(true);
+          appStore.setSubscriptionInfo(subscription_info);
 
           if (this.state.current_user) {
             this.sync_subscription_with_server(
@@ -164,6 +181,7 @@ class RootApp extends React.Component {
           await this.setState({
             has_subscription: false
           });
+          appStore.setSubscription(false);
         }
       }
     }
@@ -179,6 +197,8 @@ class RootApp extends React.Component {
           subscription_info: response,
           has_subscription: true,
         });
+        appStore.setSubscription(true);
+        appStore.setSubscriptionInfo(response);
         response['subscription_id'] = response['subscription']['id'];
         await new Storage().set('has_subscription', 'true');
         await new Storage().set('subscription_info', JSON.stringify(response));
@@ -195,6 +215,7 @@ class RootApp extends React.Component {
         await this.setState({
           has_subscription: false,
         });
+        appStore.setSubscription(false);
       }
     }
 
@@ -233,6 +254,7 @@ class RootApp extends React.Component {
       this.setState({
         has_internet: state.isConnected,
       });
+      appStore.setInternet(state.isConnected);
     });
   }
 
@@ -242,6 +264,7 @@ class RootApp extends React.Component {
     this.setState({
       confirm_conditions: true
     });
+    appStore.setConfirmConditions(true);
   }
 
   render() {
@@ -268,10 +291,10 @@ class RootApp extends React.Component {
               <Text style={{ textAlign: 'center' }}>о приблизительном местоположении</Text>
               <Text style={{ textAlign: 'center' }}>и принимаете условия</Text>
             </View>
-            <TouchableOpacity onPress={() => Linking.openURL("https://read-en.ru/apps_policy")}>
+            <TouchableOpacity onPress={() => Linking.openURL("https://reedle.ru/apps_policy")}>
               <Text style={{ color: app_theme_colors.red, textAlign: 'center' }}>Политики конфидициальности</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => Linking.openURL("https://read-en.ru/apps_terms_and_conditions")}>
+            <TouchableOpacity onPress={() => Linking.openURL("https://reedle.ru/apps_terms_and_conditions")}>
               <Text style={{ color: app_theme_colors.red, textAlign: 'center', marginBottom: 15 }}>Пользовательского соглашения</Text>
             </TouchableOpacity>
 

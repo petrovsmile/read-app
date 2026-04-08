@@ -14,11 +14,17 @@ class Dictionary extends React.Component {
   }
 
   async componentDidMount() {
-    this.props.stack.navigation.addListener('focus', () => {
+    this._unsubFocus = this.props.stack.navigation.addListener('focus', () => {
       this.getWords();
     });
 
     this.getWords();
+  }
+
+  componentWillUnmount() {
+    if (this._unsubFocus) {
+      this._unsubFocus();
+    }
   }
 
   async getWords() {

@@ -1,8 +1,6 @@
-var root_detail;
 class Show extends React.Component {
   constructor(props) {
     super(props);
-    root_detail = this;
 
     this.state = {
       percent: 0,
@@ -12,9 +10,7 @@ class Show extends React.Component {
   }
 
   async componentDidMount() {
-    root_home.setState({
-      open_property: false,
-    });
+    homeStore.setOpenProperty(false);
 
     var books = await RNFS.readFile(file_root + '/' + BOOKS_FILENAME, 'utf8');
     books = JSON.parse(books);

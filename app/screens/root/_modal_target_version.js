@@ -1,4 +1,4 @@
-class TargetVersion extends React.Component {
+const TargetVersion = observer(class TargetVersion extends React.Component {
   constructor(props) {
     super(props);
 
@@ -10,7 +10,7 @@ class TargetVersion extends React.Component {
   }
 
   async componentDidMount() {
-    if (root_app.state.has_internet == true) {
+    if (appStore.has_internet == true) {
       var response = await new Request('/api/v1/target_version', {}, { do_not_show_error: true }).get();
       if (response != false) {
         if (Platform.OS === 'ios') {
@@ -108,4 +108,4 @@ class TargetVersion extends React.Component {
       </Modal>
     )
   }
-}
+});

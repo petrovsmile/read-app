@@ -28,7 +28,7 @@ class ButtonRead extends React.Component {
       button_loader: false,
     });
 
-    var test_connect = NetInfo.addEventListener(state => {
+    this._unsubNet = NetInfo.addEventListener(state => {
       this.setState({
         have_internet: state.isConnected,
       });
@@ -42,7 +42,7 @@ class ButtonRead extends React.Component {
     if (this._isMounted == true) {
       var path = ar_files[index]; 
 
-      var response = await axios.get("https://read-en.ru" + path, { params: {} });
+      var response = await axios.get("https://reedle.ru" + path, { params: {} });
 
       var response = await new Request(path, {}).get();
       var file_data = JSON.stringify(response);
@@ -88,6 +88,9 @@ class ButtonRead extends React.Component {
 
   componentWillUnmount() {
     this._isMounted = false;
+    if (this._unsubNet) {
+      this._unsubNet();
+    }
   }
 
   async openBook(book_id) {

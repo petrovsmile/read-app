@@ -10,6 +10,7 @@ gulp.task('js', function () {
     './app/stylesheets/bookmarks/*.js',
     './app/stylesheets/dictionary/*.js',
     './app/stylesheets/profile/*.js',
+    './app/stylesheets/reader/*.js',
     './app/plugins/**/*.js',
     './app/screens/**/*.js',
     './app/render.js',

@@ -1,8 +1,6 @@
-var root_home;
 class Home extends React.Component {
   constructor(props) {
     super(props);
-    root_home = this;
 
     this.state = {
       do_not_find: false,
@@ -191,7 +189,7 @@ class Home extends React.Component {
   }
 
   goToSite() {
-    Linking.openURL("https://read-en.ru");
+    Linking.openURL("https://reedle.ru");
   }
 
   onChangeText(value) {
@@ -287,7 +285,7 @@ class Home extends React.Component {
           <View style={homeStyles.header_empty_block} />
 
           <View style={homeStyles.logo}>
-            <Text style={homeStyles.logo_text}>Read</Text>
+            <Text style={homeStyles.logo_text}>Reedle</Text>
             <Text style={homeStyles.logo_dot}>.</Text>
           </View>
 

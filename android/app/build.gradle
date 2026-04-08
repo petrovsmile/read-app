@@ -71,7 +71,6 @@ def jscFlavor = 'org.webkit:android-jsc:+'
 
 android {
     ndkVersion rootProject.ext.ndkVersion
-    buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace "com.read_en"
@@ -79,8 +78,8 @@ android {
         applicationId "com.read_en"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 89
-        versionName "1.2.1"
+        versionCode 90
+        versionName "1.3.0"
         missingDimensionStrategy "store", "play"
         resConfigs "ru", "en"
     }

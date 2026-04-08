@@ -33,7 +33,7 @@ class Request {
   }
 
   async makeRequest(method) {
-    if (root_app.state.has_internet) {
+    if (appStore.has_internet) {
       let url = HOST + this.url;
 
       try {
@@ -79,14 +79,14 @@ class Request {
 
       } catch (e) {
         if (this.options.do_not_show_error != true) {
-          root_app.showError('Ошибка подключения к серверу', this.options.desciption_error);
+          appStore.showError('Ошибка подключения к серверу', this.options.desciption_error);
         }
         return false;
       }
 
     } else {
       if (this.options.do_not_show_error != true) {
-        root_app.showError('Отсутствует подключение к интернету', this.options.desciption_error);
+        appStore.showError('Отсутствует подключение к интернету', this.options.desciption_error);
       }
       return false;
     }

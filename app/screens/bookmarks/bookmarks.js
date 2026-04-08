@@ -15,11 +15,17 @@ class Bookmarks extends React.Component {
 
   async componentDidMount() {
     //await new Storage().set('bookmarks_keys', JSON.stringify([]));
-    this.props.stack.navigation.addListener('focus', () => {
+    this._unsubFocus = this.props.stack.navigation.addListener('focus', () => {
       this.getBookmarks();
     });
 
     await this.getBookmarks();
+  }
+
+  componentWillUnmount() {
+    if (this._unsubFocus) {
+      this._unsubFocus();
+    }
   }
 
   async getBookmarks() {

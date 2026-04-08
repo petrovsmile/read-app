@@ -32,7 +32,7 @@ class Profile extends React.Component {
 
               <Text style={{ marginTop: 15, marginBottom: 15 }}>Для того, чтобы полностью удалить аккаунт, перейдите по ссылке ниже: </Text>
 
-              <TouchableOpacity onPress={() => Linking.openURL("https://read-en.ru/profile/delete")}>
+              <TouchableOpacity onPress={() => Linking.openURL("https://reedle.ru/profile/delete")}>
                 <Text style={{ color: app_theme_colors.red }}>Удаление аккаунта</Text>
               </TouchableOpacity>
             </View>

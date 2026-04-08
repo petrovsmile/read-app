@@ -10,6 +10,7 @@ import {
   Platform,
   ImageBackground,
   ScrollView,
+  FlatList,
   Dimensions,
   Image,
   ActivityIndicator,
@@ -67,6 +68,30 @@ Sound.setCategory('Playback');
 
 import * as StoreReview from 'react-native-store-review';
 
+import { makeAutoObservable, runInAction } from 'mobx';
+import { observer } from 'mobx-react';
+
+import Tts from 'react-native-tts';
+
+setTimeout(async () => {
+  try {
+    await Tts.setDefaultEngine('com.google.android.tts');
+    console.log('Google TTS engine activated');
+  } catch (err) {
+    console.warn('Google TTS not available, using default engine', err);
+  }
+
+  try {
+    var savedVoice = await AsyncStorage.getItem('ttsVoice');
+    if (savedVoice) {
+      Tts.setDefaultVoice(savedVoice);
+    } else {
+      Tts.setDefaultVoice('en-us-x-tpf-local');
+    }
+  } catch (err) {
+    console.warn('Failed to load saved TTS voice', err);
+  }
+}, 1000);
 
 // import {
 //   Appodeal,

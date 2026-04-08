@@ -1,4 +1,4 @@
-class ModalTranslateSentence extends React.Component {
+const ModalTranslateSentence = observer(class ModalTranslateSentence extends React.Component {
   render() {
     return (
       <Modal
@@ -11,7 +11,7 @@ class ModalTranslateSentence extends React.Component {
           <TouchableWithoutFeedback>
             <React.Fragment>
               <View style={{
-                backgroundColor: root_reader.state.backgroundColorTheme,
+                backgroundColor: readerStore.backgroundColorTheme,
                 borderRadius: 10,
                 alignItems: "center",
                 width: "90%",
@@ -30,7 +30,7 @@ class ModalTranslateSentence extends React.Component {
                               <Text style={{ fontSize: 18, fontFamily: 'Times', color: '#bbb' }}>{(index + 1)}</Text>
                             </View>
                             <View style={{ width: Dimensions.get('window').width * 0.9 - 40 }}>
-                              <Text style={{ color: root_reader.state.textColorTheme }}>{sentence}</Text>
+                              <Text style={{ color: readerStore.textColorTheme }}>{sentence}</Text>
                             </View>
                           </View>
                         )}
@@ -38,7 +38,7 @@ class ModalTranslateSentence extends React.Component {
                     }
 
                     {this.props.translate.constructor != Array &&
-                      <Text style={{ padding: 10, color: root_reader.state.textColorTheme }}>
+                      <Text style={{ padding: 10, color: readerStore.textColorTheme }}>
                         {this.props.translate}
                       </Text>
                     }
@@ -67,4 +67,4 @@ class ModalTranslateSentence extends React.Component {
       </Modal>
     )
   }
-}
+});

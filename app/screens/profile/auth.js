@@ -21,7 +21,7 @@ class Auth extends React.Component {
       });
     }
 
-    Linking.addEventListener('url', async (e) => {
+    this._linkSub = Linking.addEventListener('url', async (e) => {
       let token = e.url.split('token=')[1].split('/')[0];
 
       let response = await new Request('/api/v1/users/by_oauth_token', {
@@ -33,6 +33,7 @@ class Auth extends React.Component {
           error: response['error']
         });
       } else {
+        appStore.setCurrentUser(response);
         root_app.setState({
           current_user: response
         });
@@ -40,6 +41,12 @@ class Auth extends React.Component {
         root_app.checkSubscription();
       }
     });
+  }
+
+  componentWillUnmount() {
+    if (this._linkSub) {
+      this._linkSub.remove();
+    }
   }
 
   changeMethod(method) {
@@ -91,6 +98,7 @@ class Auth extends React.Component {
           error: false
         });
 
+        appStore.setCurrentUser(response);
         root_app.setState({
           current_user: response
         });
@@ -126,6 +134,7 @@ class Auth extends React.Component {
           error: false
         });
 
+        appStore.setCurrentUser(response);
         root_app.setState({
           current_user: response
         });
@@ -168,7 +177,7 @@ class Auth extends React.Component {
   socialLink(type){
     let link;
     if(type == 'vk'){
-      link = "https://oauth.vk.com/authorize?scope=email&client_id=52070548&redirect_uri="+HOST+"/oauth_app/vkontakte"
+      link = HOST+"/oauth/vk_redirect?oauth_app=true"
     }
     if(type == 'yandex'){
       link = "https://oauth.yandex.ru/authorize?response_type=code&client_id=1af05aae68ba486aa812aef9740bd74b&redirect_uri="+HOST+"/oauth_app/yandex"

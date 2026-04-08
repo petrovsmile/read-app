@@ -1,4 +1,4 @@
-class ModalTranslateWord extends React.Component {
+const ModalTranslateWord = observer(class ModalTranslateWord extends React.Component {
   constructor(props) {
     super(props);
 
@@ -60,7 +60,7 @@ class ModalTranslateWord extends React.Component {
     } else {
       const sound = new Sound(url, '', error => {
         if (error) {
-          root_app.showError('Ошибка воспроизвездения');
+          appStore.showError('Ошибка воспроизвездения');
           this.setState({
             voiceover_playing: false
           });
@@ -189,7 +189,7 @@ class ModalTranslateWord extends React.Component {
             <React.Fragment>
               <View style={{
                 margin: 20,
-                backgroundColor: root_reader.state.backgroundColorTheme,
+                backgroundColor: readerStore.backgroundColorTheme,
                 borderRadius: 10,
                 alignItems: "center",
                 width: 250,
@@ -197,7 +197,7 @@ class ModalTranslateWord extends React.Component {
                 overflow: 'hidden',
                 elevation: 5
               }}>
-                {root_app.state.has_internet ? (
+                {appStore.has_internet ? (
                   <React.Fragment>
                     <React.Fragment>
                       {this.state.count_voiceover < 15 ? (
@@ -245,7 +245,7 @@ class ModalTranslateWord extends React.Component {
                   </View>
                 }
                 <View style={{ paddingLeft: 10, paddingRight: 10, marginTop: 10 }}>
-                  <Text style={{ color: root_reader.state.textColorTheme, textAlign: 'center' }}>{this.props.translate}</Text>
+                  <Text style={{ color: readerStore.textColorTheme, textAlign: 'center' }}>{this.props.translate}</Text>
                 </View>
                 <TouchableWithoutFeedback onPress={() => this.props.close()}>
                   <View style={{ margin: 10, marginTop: 15, height: 40, backgroundColor: '#f05458', width: 230, flexDirection: 'column', justifyContent: 'center', borderRadius: 5 }}>
@@ -327,4 +327,4 @@ class ModalTranslateWord extends React.Component {
       </Modal >
     )
   }
-}
+});
