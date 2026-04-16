@@ -313,11 +313,14 @@ class Reader extends React.Component {
           } else {
             // Скролим к параграфу закладки
             var bookmarkParagraphId = this.props.stack.route.params.bookmark.paragraph;
+            var bookmarkIndex = paragraphs.findIndex(p => p.name === bookmarkParagraphId);
             this._scrollRestoreTimer = setTimeout(() => {
-              if (this.flatListRef) {
-                this.flatListRef.scrollToItem({ item: paragraphs.find(p => p.name === bookmarkParagraphId), animated: false });
+              if (this.flatListRef && bookmarkIndex >= 0) {
+                try {
+                  this.flatListRef.scrollToIndex({ index: bookmarkIndex, viewPosition: 0, animated: false });
+                } catch (e) {}
               }
-            }, 100);
+            }, 200);
           }
         }
       }
