@@ -5,25 +5,51 @@ const Paragraph = observer(class Paragraph extends React.Component {
     this.state = {
       sentences: false,
       paragraph_translate: [],
-      speakingIndex: -1,
     }
+  }
+
+  isSpeaking(sentenceIndex) {
+    var cur = readerStore.currentSpeaking;
+    return cur && cur.p === this.props.data['name'] && cur.i === sentenceIndex;
   }
 
   speakSentence(sentence, sentenceIndex) {
     var text = (sentence['b'] || []).map(function (b) { return b['v'] || ''; }).join('');
-    if (text && text.trim()) {
+    if (!text || !text.trim()) return;
+
+    // Если нажали на уже играющее предложение — остановить
+    if (this.isSpeaking(sentenceIndex)) {
       Tts.stop();
-      this.setState({ speakingIndex: sentenceIndex });
-      Tts.speak(text.trim());
+      readerStore.setCurrentSpeaking(null);
+      return;
+    }
+
+    // Остановить текущую озвучку и запустить новую.
+    Tts.stop();
+    readerStore.setCurrentSpeaking({ p: this.props.data['name'], i: sentenceIndex });
+
+    var applyAndSpeak = function () {
+      try { Tts.speak(text.trim()); } catch (e) {}
+    };
+
+    // setDefaultVoice вызываем ОДИН РАЗ на голос:
+    //  — либо сразу после смены голоса в настройках,
+    //  — либо при самом первом speak после загрузки читалки.
+    // Флаг ttsVoiceApplied сбрасывается в false при setTtsVoice() и после
+    // того, как движок успешно применил голос — остаётся true до следующей смены.
+    if (readerStore.ttsVoice && !readerStore.ttsVoiceApplied) {
+      Tts.setDefaultVoice(readerStore.ttsVoice).then(function () {
+        readerStore.setTtsVoiceApplied(true);
+        applyAndSpeak();
+      }, applyAndSpeak);
+    } else {
+      applyAndSpeak();
     }
   }
 
   async componentDidMount() {
     this._ttsFinish = Tts.addEventListener('tts-finish', () => {
-      this.setState({ speakingIndex: -1 });
-    });
-    this._ttsCancel = Tts.addEventListener('tts-cancel', () => {
-      this.setState({ speakingIndex: -1 });
+      readerStore.setCurrentSpeaking(null);
     });
     var paragraph_translate = [];
     for (const s in this.props.data['sentences']) {
@@ -38,7 +64,6 @@ const Paragraph = observer(class Paragraph extends React.Component {
 
   componentWillUnmount() {
     if (this._ttsFinish) this._ttsFinish.remove();
-    if (this._ttsCancel) this._ttsCancel.remove();
   }
 
   async addBookmark() {
@@ -175,12 +200,21 @@ const Paragraph = observer(class Paragraph extends React.Component {
             <View style={readerScreenStyles.sentenceIndent}></View>
             {this.props.data['sentences'].map((sentence, index) =>
               <React.Fragment key={index}>
-                <TouchableOpacity onPress={() => this.speakSentence(sentence, index)} style={readerScreenStyles.speakButton} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Image
-                    style={[{ width: readerStore.translate_icon_size, height: readerStore.translate_icon_size }, this.state.speakingIndex === index && { tintColor: '#f05458' }]}
-                    source={require('./app/images/reader/voiceover.png')}
-                  />
-                </TouchableOpacity>
+                {appStore.has_internet ? (
+                  <TouchableOpacity onPress={() => this.speakSentence(sentence, index)} style={readerScreenStyles.speakButton} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Image
+                      style={[{ width: readerStore.translate_icon_size, height: readerStore.translate_icon_size }, this.isSpeaking(index) && { tintColor: '#f05458' }]}
+                      source={require('./app/images/reader/voiceover.png')}
+                    />
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity onPress={() => Alert.alert('Нет подключения к интернету!')} style={readerScreenStyles.speakButton} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Image
+                      style={{ width: readerStore.translate_icon_size, height: readerStore.translate_icon_size }}
+                      source={require('./app/images/reader/voiceover-limited.png')}
+                    />
+                  </TouchableOpacity>
+                )}
                 {sentence['b'].map((block, index) => {
 
                   var past_value = "";

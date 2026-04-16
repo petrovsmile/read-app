@@ -10,15 +10,7 @@ class BookmarkStack extends React.Component {
       <RootStack.Navigator initialRouteName="Bookmark">
         <RootStack.Screen name="Bookmark" options={() => ({ headerShown: false })}>
           {(stack) => (
-            <Bookmarks root={this.props.root}  stack={stack} />
-          )}
-        </RootStack.Screen>
-        <RootStack.Screen name="Reader"
-          options={({ navigation, route }) => ({
-            headerShown: false
-          })}>
-          {(stack) => (
-            <Reader root={this.props.root} stack={stack} />
+            <Bookmarks root={this.props.root} stack={stack} root_stack={this.props.stack} />
           )}
         </RootStack.Screen>
       </RootStack.Navigator>

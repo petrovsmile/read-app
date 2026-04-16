@@ -46,7 +46,7 @@ class TabStack extends React.Component {
             title: 'Закладки',
           })}>
           {(tabs) => (
-            <BookmarkStack tabs={tabs} root={this.props.root} />
+            <BookmarkStack tabs={tabs} root={this.props.root} stack={this.props.stack} />
           )}
         </Tab.Screen>
         <Tab.Screen name="Dictionary"

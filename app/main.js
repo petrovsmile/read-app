@@ -72,6 +72,7 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
 
 import Tts from 'react-native-tts';
+import Svg, { Path, Circle } from 'react-native-svg';
 
 setTimeout(async () => {
   try {
@@ -80,17 +81,8 @@ setTimeout(async () => {
   } catch (err) {
     console.warn('Google TTS not available, using default engine', err);
   }
-
-  try {
-    var savedVoice = await AsyncStorage.getItem('ttsVoice');
-    if (savedVoice) {
-      Tts.setDefaultVoice(savedVoice);
-    } else {
-      Tts.setDefaultVoice('en-us-x-tpf-local');
-    }
-  } catch (err) {
-    console.warn('Failed to load saved TTS voice', err);
-  }
+  // Выбор голоса по умолчанию выполняется в одном месте — в reader.js
+  // (функция pickDefaultVoice), чтобы логика не дублировалась.
 }, 1000);
 
 // import {

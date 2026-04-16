@@ -8,82 +8,55 @@ class ReaderSettings extends React.Component {
 
   componentDidMount() {
     Tts.voices().then((voices) => {
-      var englishVoices = voices.filter(v => v.language && v.language.startsWith('en') && v.notInstalled !== true);
+      // Показываем только онлайн-голоса (они заметно качественнее).
+      var englishVoices = voices.filter(v =>
+        v.language &&
+        v.language.toLowerCase().startsWith('en') &&
+        v.notInstalled !== true &&
+        v.networkConnectionRequired === true
+      );
+      // Сортируем по алфавиту отображаемого названия ("Австралия — ...", "Британия — ...", "США — ...").
+      var self = this;
+      englishVoices.sort(function (a, b) {
+        return self.getVoiceLabel(a).localeCompare(self.getVoiceLabel(b), 'ru');
+      });
       this.setState({ voices: englishVoices });
     }).catch(() => {});
   }
 
-  getVoiceLabel(voice) {
-    var lang = voice.language || '';
-    var id = voice.id || voice.name || '';
-
-    // Region
-    if (lang.startsWith('en-US') || lang === 'en_US') {
-      var region = 'США';
-    } else if (lang.startsWith('en-GB') || lang === 'en_GB') {
-      var region = 'Британия';
-    } else if (lang.startsWith('en-AU') || lang === 'en_AU') {
-      var region = 'Австралия';
-    } else if (lang.startsWith('en-IN') || lang === 'en_IN') {
-      var region = 'Индия';
-    } else {
-      var region = lang.replace('en-', '').replace('en_', '').toUpperCase();
-    }
-
-    // Known Android Google TTS voice codes → gender
-    var VOICE_GENDER = {
-      'tpf': 'Мужской', 'iom': 'Мужской 2', 'iob': 'Мужской 3', 'iol': 'Мужской 4',
-      'sfg': 'Женский', 'ene': 'Женский 2',
-      'gba': 'Женский',  'rjs': 'Мужской',
-      'auc': 'Женский',
-    };
-
-    // Extract code like "tpf" from "en-us-x-tpf-local"
-    var parts = id.split('-');
-    var code = parts.length >= 4 ? parts[3] : '';
-    var genderLabel = VOICE_GENDER[code] || (code ? code.toUpperCase() : '');
-
-    // iOS voices have human-readable names (e.g. "Karen", "Samantha")
-    var iosName = voice.name || '';
-    if (iosName && !iosName.startsWith('en-')) {
-      genderLabel = iosName;
-    }
-
-    var isOffline = voice.networkConnectionRequired !== true;
-    var connection = isOffline ? '📱 без интернета' : '🌐 нужен интернет';
-
-    if (genderLabel) {
-      return region + ' — ' + genderLabel + ' (' + connection + ')';
-    }
-    return region + ' (' + connection + ')';
+  getVoiceLabel(voice, index) {
+    // Просто возвращаем "Голос N" где N — это порядковый номер (индекс + 1)
+    return `Голос ${index + 1}`;
   }
 
   render(){
     return(
-      <React.Fragment>
-        {this.props.visible == true &&
-          <TouchableOpacity activeOpacity={1} style={{ position: 'absolute', width: '100%', height: '100%', right: 0, top: 40, zIndex: 10000000, }} onPress={() => this.props.closeSettings()}>
-            <TouchableWithoutFeedback>
-              <View
-                onStartShouldSetResponder={() => true}
-                onMoveShouldSetResponder={() => true}
-                style={{
-                  width: 212,
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: '#ddd',
-                  position: 'absolute',
-                  right: 10,
-                  top: 5,
-                  backgroundColor: '#fff',
-                  maxHeight: 500,
-                }}
-              >
-                <ScrollView
-                  bounces={false}
-                  showsVerticalScrollIndicator={false}
-                  keyboardShouldPersistTaps="handled"
-                >
+      <Modal
+        visible={this.props.visible == true}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => (this.props.closeSettings && this.props.closeSettings())}
+        statusBarTranslucent={true}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.15)' }}
+          onPress={() => (this.props.closeSettings && this.props.closeSettings())}
+        >
+          <TouchableWithoutFeedback onPress={() => {}}>
+            <View
+              style={{
+                width: 212,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: '#ddd',
+                position: 'absolute',
+                right: 10,
+                top: 45,
+                backgroundColor: '#fff',
+                overflow: 'hidden',
+              }}
+            >
                 <View style={{ flexDirection: 'row', borderBottomColor: '#ddd', borderBottomWidth: 1 }}>
                   <View style={{ borderRightWidth: 1, borderRightColor: '#ddd' }}>
                     {this.props.fontSize <= 14 &&
@@ -229,26 +202,32 @@ class ReaderSettings extends React.Component {
                 </View>
 
                 {this.state.voices.length > 0 &&
-                  <View style={{ padding: 10, borderTopColor: '#ddd', borderTopWidth: 1 }}>
-                    <Text style={{ fontSize: 16, marginBottom: 10 }}>
+                  <View style={{ borderTopColor: '#ddd', borderTopWidth: 1 }}>
+                    <Text style={{ fontSize: 16, marginTop: 10, marginBottom: 6, marginLeft: 10, marginRight: 10 }}>
                       Голос озвучки предложений:
                     </Text>
-                    {this.state.voices.map((voice, index) =>
-                      <TouchableOpacity key={index} onPress={() => this.props.changeVoice(voice.id)}
-                        style={[(this.props.ttsVoice == voice.id) ? { padding: 7, paddingLeft: 10, paddingRight: 10, backgroundColor: '#ddd', borderRadius: 5 } : { padding: 7, paddingLeft: 10, paddingRight: 10 }]}>
-                        <Text style={{ fontSize: 14 }}>
-                          {this.getVoiceLabel(voice)}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
+                    <ScrollView
+                      style={{ height: 200 }}
+                      nestedScrollEnabled={true}
+                      showsVerticalScrollIndicator={true}
+                      keyboardShouldPersistTaps="handled"
+                      contentContainerStyle={{ paddingLeft: 10, paddingRight: 10, paddingBottom: 10 }}
+                    >
+                      {this.state.voices.map((voice, index) =>
+                        <TouchableOpacity key={index} onPress={() => this.props.changeVoice(voice)}
+                          style={[(this.props.ttsVoice == voice.id) ? { padding: 7, paddingLeft: 10, paddingRight: 10, backgroundColor: '#ddd', borderRadius: 5 } : { padding: 7, paddingLeft: 10, paddingRight: 10 }]}>
+                          <Text style={{ fontSize: 14 }}>
+                            {this.getVoiceLabel(voice, index)}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </ScrollView>
                   </View>
                 }
-                </ScrollView>
-              </View>
-            </TouchableWithoutFeedback>
-          </TouchableOpacity>
-        }
-      </React.Fragment>
+            </View>
+          </TouchableWithoutFeedback>
+        </TouchableOpacity>
+      </Modal>
     )
   }
 }

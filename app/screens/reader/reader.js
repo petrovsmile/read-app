@@ -1,5 +1,66 @@
 var scroll_percent = 0;
 
+// ============================================================
+// Единая точка выбора голоса озвучки по умолчанию.
+// Приоритет: английский → оффлайн → мужской.
+// Используется ТОЛЬКО здесь — в reader.js при первом запуске,
+// когда в Storage ещё нет сохранённого ttsVoice.
+// ============================================================
+// Google TTS: только точно мужские коды. tpf/tpc/sfg/ene — женские,
+// rjs — неопределённый, не включаем во избежание ошибочной детекции.
+var MALE_ANDROID_CODES = ['iol', 'iom', 'iob'];
+var MALE_IOS_NAMES = [
+  'daniel', 'alex', 'aaron', 'fred', 'tom', 'arthur',
+  'oliver', 'rishi', 'gordon', 'albert', 'bruce', 'ralph',
+  'jorge', 'diego', 'juan', 'luca', 'reed'
+];
+
+function isOfflineVoice(v) {
+  return v && v.networkConnectionRequired !== true;
+}
+function isEnglishVoice(v) {
+  return v && v.language && v.language.toLowerCase().startsWith('en') && v.notInstalled !== true;
+}
+function isMaleVoice(v) {
+  if (!v) return false;
+  // Явное поле gender (на некоторых платформах приходит)
+  if (v.gender && String(v.gender).toLowerCase() === 'male') return true;
+  // Android Google TTS: id вида "en-us-x-tpf-local"
+  var id = (v.id || '').toLowerCase();
+  var parts = id.split('-');
+  if (parts.length >= 4 && MALE_ANDROID_CODES.indexOf(parts[3]) !== -1) return true;
+  // iOS: человекочитаемое имя
+  var name = (v.name || '').toLowerCase();
+  for (var i = 0; i < MALE_IOS_NAMES.length; i++) {
+    if (name.indexOf(MALE_IOS_NAMES[i]) !== -1) return true;
+  }
+  return false;
+}
+
+function pickDefaultVoice(voices) {
+  if (!voices || !voices.length) return null;
+  var english = voices.filter(isEnglishVoice);
+  if (!english.length) return null;
+
+  var isOnline = function (v) { return v && v.networkConnectionRequired === true; };
+
+  // 1. Мужской + онлайн (список в настройках показывает только онлайн,
+  //    хотим, чтобы дефолт был из того же набора)
+  var maleOnline = english.filter(function (v) { return isOnline(v) && isMaleVoice(v); });
+  if (maleOnline.length) return maleOnline[0];
+
+  // 2. Любой мужской (offline как fallback)
+  var male = english.filter(isMaleVoice);
+  if (male.length) return male[0];
+
+  // 3. Любой онлайн английский
+  var online = english.filter(isOnline);
+  if (online.length) return online[0];
+
+  // 4. Хоть какой-то английский
+  return english[0];
+}
+
 
 class Reader extends React.Component {
   constructor(props) {
@@ -53,8 +114,6 @@ class Reader extends React.Component {
 
     this.book_name;
     this.book_name_en;
-
-    this.paragraphsCoords = {};
   }
 
 
@@ -101,14 +160,18 @@ class Reader extends React.Component {
     }
 
     var ttsVoice = await new Storage().get('ttsVoice');
+    var ttsVoiceApplied = false;
 
     if (!ttsVoice) {
       try {
         var allVoices = await Tts.voices();
-        var englishVoices = allVoices.filter(function(v) { return v.language && v.language.startsWith('en') && v.notInstalled !== true; });
-        if (englishVoices.length > 0) {
-          ttsVoice = englishVoices[0].id;
-          Tts.setDefaultVoice(ttsVoice);
+        var picked = pickDefaultVoice(allVoices);
+        if (picked) {
+          ttsVoice = picked.id;
+          try {
+            await Tts.setDefaultVoice(ttsVoice);
+            ttsVoiceApplied = true;
+          } catch (e) {}
           new Storage().set('ttsVoice', ttsVoice);
         }
       } catch(e) {}
@@ -128,7 +191,10 @@ class Reader extends React.Component {
     readerStore.setThemeSettings(settings);
     readerStore.setBookmark(this.state.bookmark);
     readerStore.setPage(this.state.page);
-    if (ttsVoice) readerStore.setTtsVoice(ttsVoice);
+    if (ttsVoice) {
+      readerStore.setTtsVoice(ttsVoice);
+      readerStore.setTtsVoiceApplied(ttsVoiceApplied);
+    }
 
     if (this.have_file == true) {
       var words = await RNFS.readFile(file_root + '/books/' + this.props.stack.route.params.book_id + '/words.json');
@@ -234,14 +300,25 @@ class Reader extends React.Component {
           show_list: true,
         });
 
-        if (first_load == true && this.props.stack.route.params.bookmark == undefined) {
-          var scroll = await new Storage().get('scroll_' + this.props.stack.route.params.book_id);
+        if (first_load == true) {
+          if (this.props.stack.route.params.bookmark == undefined) {
+            // Восстанавливаем сохранённую позицию скролла
+            var scroll = await new Storage().get('scroll_' + this.props.stack.route.params.book_id);
 
-          this._scrollRestoreTimer = setTimeout(() => {
-            if (this.flatListRef) {
-              this.flatListRef.scrollToOffset({ offset: parseInt(scroll), animated: false });
-            }
-          });
+            this._scrollRestoreTimer = setTimeout(() => {
+              if (this.flatListRef) {
+                this.flatListRef.scrollToOffset({ offset: parseInt(scroll), animated: false });
+              }
+            });
+          } else {
+            // Скролим к параграфу закладки
+            var bookmarkParagraphId = this.props.stack.route.params.bookmark.paragraph;
+            this._scrollRestoreTimer = setTimeout(() => {
+              if (this.flatListRef) {
+                this.flatListRef.scrollToItem({ item: paragraphs.find(p => p.name === bookmarkParagraphId), animated: false });
+              }
+            }, 100);
+          }
         }
       }
 
@@ -615,27 +692,6 @@ class Reader extends React.Component {
     });
   }
 
-  async checkBookmakScroll(event, paragraph_name) {
-    if (this.props.stack.route.params.bookmark != undefined) {
-      const layout = event.nativeEvent.layout;
-
-      var paragraphsCoords = this.paragraphsCoords;
-      paragraphsCoords[paragraph_name] = layout.y;
-      this.paragraphsCoords = paragraphsCoords;
-
-      if (Object.keys(this.paragraphsCoords).length == this.state.paragraphs.length) {
-        if (this.flatListRef) {
-          this.flatListRef.scrollToOffset({
-            offset: parseInt(
-              this.paragraphsCoords[this.props.stack.route.params.bookmark.paragraph]
-            ),
-            animated: false
-          });
-        }
-        this.setPercent();
-      }
-    }
-  }
 
   async goBookUp(book_id) {
     var sort_new_book = await new Storage().get('sort_new_book');
@@ -660,9 +716,28 @@ class Reader extends React.Component {
     }
   }
 
-  changeVoice(voiceId) {
-    Tts.setDefaultVoice(voiceId);
+  async changeVoice(voice) {
+    // Принимаем как объект voice, так и строку (id) для обратной совместимости
+    var voiceId = (typeof voice === 'string') ? voice : (voice && voice.id);
+    if (!voiceId) return;
+
+    // Остановить текущую озвучку, чтобы новая стартовала чистой
+    try { Tts.stop(); } catch (e) {}
+    readerStore.setCurrentSpeaking(null);
+
+    // Только setDefaultVoice — он сам подтянет нужную локаль из voice object.
+    // Если сначала вызвать setDefaultLanguage, Android TTS сбрасывает voice
+    // на женский дефолт для этого языка, и следующий setDefaultVoice
+    // в некоторых прошивках не успевает применить -> отсюда «все голоса женские».
+    var applied = false;
+    try {
+      await Tts.setDefaultVoice(voiceId);
+      applied = true;
+    } catch (e) {}
+
     new Storage().set('ttsVoice', voiceId);
+    readerStore.setTtsVoice(voiceId);           // сбрасывает ttsVoiceApplied в false
+    readerStore.setTtsVoiceApplied(applied);    // и сразу ставит true, если успешно применили
     this.setState({ ttsVoice: voiceId });
   }
 
@@ -684,7 +759,7 @@ class Reader extends React.Component {
       );
     }
     return (
-      <View onLayout={(event) => this.checkBookmakScroll(event, item.name)}>
+      <View>
         <Paragraph
           data={item}
           openTranslateSentence={(value) => this.translateSentence(value)}
@@ -854,46 +929,27 @@ class Reader extends React.Component {
               )}
 
               <TouchableWithoutFeedback onPress={() => this.openThemeSetting()}>
-                <View>
-                  {this.state.textColorTheme == '#ffffff' &&
-                    <React.Fragment>
-                      {this.state.showThemeSetting ? (
-                        <Image
-                          style={{ height: 30, width: 30, marginTop: 5, marginRight: 10 }}
-                          resizeMode={'contain'}
-                          source={require('./app/images/layouts/error_close.png')}
-                        />
-                      ) : (
-                        <Image
-                          style={{ height: 30, width: 30, marginTop: 5, marginRight: 10 }}
-                          resizeMode={'contain'}
-                          source={require('./app/images/header/property-white.png')}
-                        />
-                      )}
-                    </React.Fragment>
-                  }
-                  {this.state.textColorTheme == '#000000' &&
-                    <React.Fragment>
-                      {this.state.showThemeSetting ? (
-                        <Image
-                          style={{ height: 30, width: 30, marginTop: 5, marginRight: 10 }}
-                          resizeMode={'contain'}
-                          source={require('./app/images/home/settings-close.png')}
-                        />
-                      ) : (
-                        <Image
-                          style={{ height: 30, width: 30, marginTop: 5, marginRight: 10 }}
-                          resizeMode={'contain'}
-                          source={require('./app/images/header/property.png')}
-                        />
-                      )}
-                    </React.Fragment>
-                  }
+                <View style={{ height: 30, width: 30, marginTop: 5, marginRight: 10, alignItems: 'center', justifyContent: 'center' }}>
+                  <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
+                    <Circle
+                      cx="12" cy="12" r="3"
+                      stroke={this.state.textColorTheme || '#000000'}
+                      strokeWidth={1.4}
+                    />
+                    <Path
+                      stroke={this.state.textColorTheme || '#000000'}
+                      strokeWidth={1.4}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"
+                    />
+                  </Svg>
                 </View>
               </TouchableWithoutFeedback>
 
               <ReaderSettings
                 visible={this.state.showThemeSetting}
+                closeSettings={() => this.setState({ showThemeSetting: false })}
 
                 fontSize={this.state.fontSize}
                 changeFontSize={(value) => this.changeFontSize(value)}

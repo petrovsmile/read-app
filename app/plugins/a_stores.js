@@ -59,25 +59,32 @@ class ReaderStore {
   bookmark = false;
   page = '';
   ttsVoice = false;
+  ttsVoiceApplied = false; // true, если текущий ttsVoice уже применён в Tts engine
   list_words = null;
+  currentSpeaking = null;
 
   constructor() {
     makeAutoObservable(this);
   }
 
   setThemeSettings(settings) {
-    this.fontSize = settings.fontSize;
-    this.fontFamily = settings.fontFamily;
-    this.textAlign = settings.textAlign;
-    this.translate_icon_size = settings.translate_icon_size;
-    this.backgroundColorTheme = settings.backgroundColorTheme;
-    this.textColorTheme = settings.textColorTheme;
-    this.secondColorTheme = settings.secondColorTheme;
+    // Мерджим — обновляем только те поля, которые реально пришли.
+    // Иначе при вызове вида setThemeSettings({fontFamily: 'X'}) все
+    // остальные поля стали бы undefined (баг со сбросом шрифта/размеров).
+    if (settings.fontSize !== undefined) this.fontSize = settings.fontSize;
+    if (settings.fontFamily !== undefined) this.fontFamily = settings.fontFamily;
+    if (settings.textAlign !== undefined) this.textAlign = settings.textAlign;
+    if (settings.translate_icon_size !== undefined) this.translate_icon_size = settings.translate_icon_size;
+    if (settings.backgroundColorTheme !== undefined) this.backgroundColorTheme = settings.backgroundColorTheme;
+    if (settings.textColorTheme !== undefined) this.textColorTheme = settings.textColorTheme;
+    if (settings.secondColorTheme !== undefined) this.secondColorTheme = settings.secondColorTheme;
   }
 
   setBookmark(value) { this.bookmark = value; }
   setPage(value) { this.page = value; }
-  setTtsVoice(value) { this.ttsVoice = value; }
+  setTtsVoice(value) { this.ttsVoice = value; this.ttsVoiceApplied = false; }
+  setTtsVoiceApplied(value) { this.ttsVoiceApplied = value; }
+  setCurrentSpeaking(value) { this.currentSpeaking = value; }
   setListWords(words) { this.list_words = words; }
   clearListWords() { this.list_words = null; }
 }
