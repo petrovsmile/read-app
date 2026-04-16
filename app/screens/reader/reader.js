@@ -305,22 +305,38 @@ class Reader extends React.Component {
             // Восстанавливаем сохранённую позицию скролла
             var scroll = await new Storage().get('scroll_' + this.props.stack.route.params.book_id);
 
-            this._scrollRestoreTimer = setTimeout(() => {
-              if (this.flatListRef) {
-                this.flatListRef.scrollToOffset({ offset: parseInt(scroll), animated: false });
-              }
-            });
+            if (scroll !== undefined && scroll !== null && scroll !== '') {
+              this._scrollRestoreTimer = setTimeout(() => {
+                if (this.flatListRef && this.state.paragraphs && this.state.paragraphs.length > 0) {
+                  try {
+                    var offset = parseInt(scroll);
+                    if (!isNaN(offset) && offset >= 0) {
+                      this.flatListRef.scrollToOffset({ offset: offset, animated: false });
+                    }
+                  } catch (e) {}
+                }
+              }, 500);
+            }
           } else {
             // Скролим к параграфу закладки
             var bookmarkParagraphId = this.props.stack.route.params.bookmark.paragraph;
             var bookmarkIndex = paragraphs.findIndex(p => p.name === bookmarkParagraphId);
-            this._scrollRestoreTimer = setTimeout(() => {
-              if (this.flatListRef && bookmarkIndex >= 0) {
-                try {
-                  this.flatListRef.scrollToIndex({ index: bookmarkIndex, viewPosition: 0, animated: false });
-                } catch (e) {}
-              }
-            }, 200);
+
+            if (bookmarkIndex >= 0 && bookmarkIndex < paragraphs.length) {
+              this._scrollRestoreTimer = setTimeout(() => {
+                if (this.flatListRef && this.state.paragraphs && this.state.paragraphs.length > 0) {
+                  try {
+                    this.flatListRef.scrollToIndex({ index: bookmarkIndex, animated: false });
+                  } catch (e) {
+                    // Fallback: если scrollToIndex не работает, пробуем scrollToOffset с примерным смещением
+                    try {
+                      var approximateOffset = bookmarkIndex * 200; // примерная высота элемента
+                      this.flatListRef.scrollToOffset({ offset: approximateOffset, animated: false });
+                    } catch (e2) {}
+                  }
+                }
+              }, 500);
+            }
           }
         }
       }
