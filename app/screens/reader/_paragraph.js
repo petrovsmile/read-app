@@ -6,11 +6,35 @@ const Paragraph = observer(class Paragraph extends React.Component {
       sentences: false,
       paragraph_translate: [],
     }
+
+    // Animated value для пульсирования иконки озвучки
+    this.scaleAnim = new Animated.Value(1);
   }
 
   isSpeaking(sentenceIndex) {
     var cur = readerStore.currentSpeaking;
     return cur && cur.p === this.props.data['name'] && cur.i === sentenceIndex;
+  }
+
+  startPulseAnimation() {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(this.scaleAnim, {
+          toValue: 0.8,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(this.scaleAnim, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }
+
+  stopPulseAnimation() {
+    this.scaleAnim.setValue(1);
   }
 
   speakSentence(sentence, sentenceIndex) {
@@ -21,12 +45,14 @@ const Paragraph = observer(class Paragraph extends React.Component {
     if (this.isSpeaking(sentenceIndex)) {
       Tts.stop();
       readerStore.setCurrentSpeaking(null);
+      this.stopPulseAnimation();
       return;
     }
 
     // Остановить текущую озвучку и запустить новую.
     Tts.stop();
     readerStore.setCurrentSpeaking({ p: this.props.data['name'], i: sentenceIndex });
+    this.startPulseAnimation();
 
     var applyAndSpeak = function () {
       try { Tts.speak(text.trim()); } catch (e) {}
@@ -202,8 +228,14 @@ const Paragraph = observer(class Paragraph extends React.Component {
               <React.Fragment key={index}>
                 {appStore.has_internet ? (
                   <TouchableOpacity onPress={() => this.speakSentence(sentence, index)} style={readerScreenStyles.speakButton} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Image
-                      style={[{ width: readerStore.translate_icon_size, height: readerStore.translate_icon_size }, this.isSpeaking(index) && { tintColor: '#f05458' }]}
+                    <Animated.Image
+                      style={[
+                        { width: readerStore.translate_icon_size, height: readerStore.translate_icon_size },
+                        this.isSpeaking(index) && {
+                          tintColor: '#f05458',
+                          transform: [{ scale: this.scaleAnim }]
+                        }
+                      ]}
                       source={require('./app/images/reader/voiceover.png')}
                     />
                   </TouchableOpacity>

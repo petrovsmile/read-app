@@ -9,6 +9,9 @@ const ModalTranslateWord = observer(class ModalTranslateWord extends React.Compo
       words: [],
       show_limits_information: false
     }
+
+    // Animated value для пульсирования иконки озвучки слова
+    this.scaleAnim = new Animated.Value(1);
   }
 
   async componentDidMount() {
@@ -42,6 +45,27 @@ const ModalTranslateWord = observer(class ModalTranslateWord extends React.Compo
     });
   }
 
+  startPulseAnimation() {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(this.scaleAnim, {
+          toValue: 0.8,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(this.scaleAnim, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }
+
+  stopPulseAnimation() {
+    this.scaleAnim.setValue(1);
+  }
+
   async voice_word(original) {
     YandexMetrica.sendEvent('Voiceover', {
       original: original
@@ -50,6 +74,7 @@ const ModalTranslateWord = observer(class ModalTranslateWord extends React.Compo
     this.setState({
       voiceover_playing: true
     });
+    this.startPulseAnimation();
 
     var pesponse = await new Request('/api/v1/books/voiceover_url_by_word', { original: original }, { do_not_show_error: true }).get();
 
@@ -57,6 +82,10 @@ const ModalTranslateWord = observer(class ModalTranslateWord extends React.Compo
 
     if (url == null) {
       Alert.alert('Озвучка не найдена');
+      this.setState({
+        voiceover_playing: false
+      });
+      this.stopPulseAnimation();
     } else {
       const sound = new Sound(url, '', error => {
         if (error) {
@@ -64,6 +93,7 @@ const ModalTranslateWord = observer(class ModalTranslateWord extends React.Compo
           this.setState({
             voiceover_playing: false
           });
+          this.stopPulseAnimation();
         }
 
         sound.play((success) => {
@@ -91,6 +121,7 @@ const ModalTranslateWord = observer(class ModalTranslateWord extends React.Compo
           this.setState({
             voiceover_playing: false
           });
+          this.stopPulseAnimation();
         });
       })
     }
@@ -203,11 +234,15 @@ const ModalTranslateWord = observer(class ModalTranslateWord extends React.Compo
                       {this.state.count_voiceover < 15 ? (
                         <TouchableWithoutFeedback onPress={() => this.voice_word(this.props.original)}>
                           <View style={{ position: 'absolute', left: 10, top: 10, width: 48, height: 34 }}>
-                            {this.state.voiceover_playing == true ? (
-                              <Image style={{ width: 24, height: 24 }} source={require('./app/images/reader/voiceover-active.png')} />
-                            ) : (
-                              <Image style={{ width: 24, height: 24 }} source={require('./app/images/reader/voiceover.png')} />
-                            )}
+                            <Animated.Image
+                              style={[
+                                { width: 24, height: 24 },
+                                this.state.voiceover_playing && {
+                                  transform: [{ scale: this.scaleAnim }]
+                                }
+                              ]}
+                              source={this.state.voiceover_playing ? require('./app/images/reader/voiceover-active.png') : require('./app/images/reader/voiceover.png')}
+                            />
                             {!this.props.has_subscription &&
                               <View style={{ marginTop: 5, width: 24 }}>
                                 <Text style={{ fontSize: 9, color: '#aaa', textAlign: 'center' }}>

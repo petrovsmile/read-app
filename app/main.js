@@ -24,7 +24,8 @@ import {
   Switch,
   Vibration,
   Linking,
-  Alert
+  Alert,
+  Animated
 } from 'react-native';
 
 import { WebView } from 'react-native-webview';
