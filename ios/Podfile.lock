@@ -1,40 +1,36 @@
 PODS:
   - boost (1.84.0)
-  - DivKit (13.0.0):
-    - DivKit_Base (= 13.0.0)
-    - DivKit_BaseTiny (= 13.0.0)
-    - DivKit_BaseUI (= 13.0.0)
-    - DivKit_CommonCore (= 13.0.0)
-    - DivKit_LayoutKit (= 13.0.0)
-    - DivKit_LayoutKitInterface (= 13.0.0)
-    - DivKit_Networking (= 13.0.0)
-    - DivKit_Serialization (= 13.0.0)
-    - DivKit_TemplatesSupport (= 13.0.0)
-  - DivKit_Base (13.0.0):
-    - DivKit_BaseTiny (= 13.0.0)
-    - DivKit_BaseUI (= 13.0.0)
-  - DivKit_BaseTiny (13.0.0)
-  - DivKit_BaseUI (13.0.0):
-    - DivKit_BaseTiny (= 13.0.0)
-  - DivKit_CommonCore (13.0.0):
-    - DivKit_Base (= 13.0.0)
-    - DivKit_BaseTiny (= 13.0.0)
-  - DivKit_LayoutKit (13.0.0):
-    - DivKit_BaseTiny (= 13.0.0)
-    - DivKit_BaseUI (= 13.0.0)
-    - DivKit_CommonCore (= 13.0.0)
-    - DivKit_LayoutKitInterface (= 13.0.0)
-  - DivKit_LayoutKitInterface (13.0.0):
-    - DivKit_Base (= 13.0.0)
-    - DivKit_BaseTiny (= 13.0.0)
-    - DivKit_BaseUI (= 13.0.0)
-  - DivKit_Networking (13.0.0):
-    - DivKit_Base (= 13.0.0)
-  - DivKit_Serialization (13.0.0):
-    - DivKit_CommonCore (= 13.0.0)
-  - DivKit_TemplatesSupport (13.0.0):
-    - DivKit_CommonCore (= 13.0.0)
-    - DivKit_Serialization (= 13.0.0)
+  - DivKit (24.2.0):
+    - DivKit_Base (= 24.2.0)
+    - DivKit_BaseTiny (= 24.2.0)
+    - DivKit_BaseUI (= 24.2.0)
+    - DivKit_CommonCore (= 24.2.0)
+    - DivKit_LayoutKit (= 24.2.0)
+    - DivKit_LayoutKitInterface (= 24.2.0)
+    - DivKit_Networking (= 24.2.0)
+    - DivKit_Serialization (= 24.2.0)
+  - DivKit_Base (24.2.0):
+    - DivKit_BaseTiny (= 24.2.0)
+    - DivKit_BaseUI (= 24.2.0)
+  - DivKit_BaseTiny (24.2.0)
+  - DivKit_BaseUI (24.2.0):
+    - DivKit_BaseTiny (= 24.2.0)
+  - DivKit_CommonCore (24.2.0):
+    - DivKit_Base (= 24.2.0)
+    - DivKit_BaseTiny (= 24.2.0)
+  - DivKit_LayoutKit (24.2.0):
+    - DivKit_BaseTiny (= 24.2.0)
+    - DivKit_BaseUI (= 24.2.0)
+    - DivKit_CommonCore (= 24.2.0)
+    - DivKit_LayoutKitInterface (= 24.2.0)
+  - DivKit_LayoutKitInterface (24.2.0):
+    - DivKit_Base (= 24.2.0)
+    - DivKit_BaseTiny (= 24.2.0)
+    - DivKit_BaseUI (= 24.2.0)
+  - DivKit_Networking (24.2.0):
+    - DivKit_Base (= 24.2.0)
+  - DivKit_Serialization (24.2.0):
+    - DivKit_CommonCore (= 24.2.0)
   - DoubleConversion (1.1.6)
   - fast_float (6.1.4)
   - FBLazyVector (0.78.3)
@@ -1453,8 +1449,8 @@ PODS:
     - Yoga
   - react-native-yandex-mobile-ads (0.7.0):
     - React-Core
-    - YandexMobileAds (= 5.5.0)
-    - YandexMobileAdsInstream (= 0.15.0)
+    - YandexMobileAds (= 5.9.1)
+    - YandexMobileAdsInstream (= 0.19.0)
   - React-NativeModulesApple (0.78.3):
     - glog
     - hermes-engine
@@ -1786,7 +1782,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNIap (12.16.4):
+  - RNIap (13.0.4):
     - RCT-Folly
     - RCTRequired
     - RCTTypeSafety
@@ -2028,14 +2024,14 @@ PODS:
   - SocketRocket (0.7.1)
   - TextToSpeech (4.1.1):
     - React-Core
-  - YandexMobileAds (5.5.0):
-    - DivKit (~> 13.0)
-    - YandexMobileAds/Static (= 5.5.0)
-  - YandexMobileAds/Static (5.5.0):
-    - DivKit (~> 13.0)
+  - YandexMobileAds (5.9.1):
+    - DivKit (~> 24.2)
+    - YandexMobileAds/Static (= 5.9.1)
+  - YandexMobileAds/Static (5.9.1):
+    - DivKit (~> 24.2)
     - YandexMobileMetrica (< 5.0.0, >= 4.0.0)
-  - YandexMobileAdsInstream (0.15.0):
-    - YandexMobileAds (~> 5.5.0)
+  - YandexMobileAdsInstream (0.19.0):
+    - YandexMobileAds (~> 5.9.0)
   - YandexMobileMetrica (4.5.2):
     - YandexMobileMetrica/Static (= 4.5.2)
   - YandexMobileMetrica/Static (4.5.2):
@@ -2145,7 +2141,6 @@ SPEC REPOS:
     - DivKit_LayoutKitInterface
     - DivKit_Networking
     - DivKit_Serialization
-    - DivKit_TemplatesSupport
     - SocketRocket
     - YandexMobileAds
     - YandexMobileAdsInstream
@@ -2324,16 +2319,15 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   boost: 7e761d76ca2ce687f7cc98e698152abd03a18f90
-  DivKit: cbc853a0e94022835e9307e604135aa25424e284
-  DivKit_Base: 538c8daf847099e700646beb2b447aee1a4818fe
-  DivKit_BaseTiny: 1fa9cd01974dc65430bf409fef57e9a9b4c0679f
-  DivKit_BaseUI: b0478ce03702bbda3aa76f4388c05249ef578878
-  DivKit_CommonCore: 4db51be9c1263c0f7b62e9fb864785f47ab57875
-  DivKit_LayoutKit: c7974256f128cb2bbd7d5d6711c95c63727c53b3
-  DivKit_LayoutKitInterface: 02b3436a7191ab1b517da54a5fe076f9f6977c31
-  DivKit_Networking: 400504b0212282bd047c6720f70abaf74f6e4dd8
-  DivKit_Serialization: 4a55e41a1f06ec211e696963403db53469a19337
-  DivKit_TemplatesSupport: 6cb0a79e7673caeb05686403bd2b9a34c3624571
+  DivKit: f2151bd0bfc67e0b4ad949e8cd1caa7379253bef
+  DivKit_Base: 263499ebc77c217314d4bee1b374781c3643c8a9
+  DivKit_BaseTiny: 42535fa725058957129f231b4b52d394ed4d7ea9
+  DivKit_BaseUI: cb86da6096de4a3bb670b4196ddeed0334acd671
+  DivKit_CommonCore: dd26a3f7dcc9010ec3a4ed3c5c3718e7a882536a
+  DivKit_LayoutKit: cdcfa56dd6a88495703350bb63f410dde426435c
+  DivKit_LayoutKitInterface: f0dae7b2e7a024d0340914490b1c06c0e6a926ae
+  DivKit_Networking: cd028559a160baa76c43fda52174f2f83c87b747
+  DivKit_Serialization: b4d8a4672de9134889c5f92f5f7e04e04112e660
   DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
   fast_float: 06eeec4fe712a76acc9376682e4808b05ce978b6
   FBLazyVector: e053802577a711add20e45bbbf5dd1180b6ca62e
@@ -2377,7 +2371,7 @@ SPEC CHECKSUMS:
   react-native-slider: 310d3f89edd6ca8344a974bfe83a29a3fbb60e5a
   react-native-tracking-transparency: 15eb319f2b982070eb9831582af27d87badfa624
   react-native-webview: 564ff69d38cdd9ae870feb99743accb6f18fdc2f
-  react-native-yandex-mobile-ads: 80084708e1572b11b9303229129f81438cc60fe3
+  react-native-yandex-mobile-ads: 68adbeb6e99e7d53a61cb7dbc234ff61d1e5d689
   React-NativeModulesApple: c8bb2bc56d39bd122c56ef58a55c3f34d53f1585
   React-perflogger: d06f0fd0727356651a5535f6d717130187aeb667
   React-performancetimeline: 7afc2307ffc4047cef95eb711ea39a12fd90d533
@@ -2409,7 +2403,7 @@ SPEC CHECKSUMS:
   RNCAsyncStorage: dc5ca6aeca46e73f963ea4f79e222838c2d186cb
   RNFS: 89de7d7f4c0f6bafa05343c578f61118c8282ed8
   RNGestureHandler: 1826c2e65e72ae6c9b8709c9ed6d1c6c4f26a8a7
-  RNIap: f14cb76671570a0144bbf0cb23541f0f3364f393
+  RNIap: 61f183ac917792fae42b0326b1bef33598c1adf6
   RNReanimated: 8a4395d43e799425e72de66c78dd0f068c36948f
   RNScreens: d694115e022f03c2dd669acd9c5085905e6b4435
   RNSound: 314cc5226453ef4a3314a196c65e8a65e5106a7b
@@ -2417,11 +2411,11 @@ SPEC CHECKSUMS:
   RNSVG: 91c395070d1f12849a0cde52f04b45db51c41066
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   TextToSpeech: 89b239221ec378d213af422d14789a729705360b
-  YandexMobileAds: 1affe9f27183a569960e108a4b4cb6cbcfc8eaea
-  YandexMobileAdsInstream: 65f00989f45cf61cb359eeef42e0f1001f2501d1
+  YandexMobileAds: b4c8789fb2cc1540fc16bc94f2c18ce2d031ccc7
+  YandexMobileAdsInstream: b20ddc515fdc924d86d2c2353e5c8b41448e53b0
   YandexMobileMetrica: f5368ee93f286c793d73b58da00929babfc897c1
   Yoga: eca8dd841b7cd47d82d66be58af8e3aeb819012f
 
-PODFILE CHECKSUM: 93e7fa1ddc721af769d833162ea20389e1a03495
+PODFILE CHECKSUM: 4c856fe10f5402fd5524afe5ab98b444a1f74d18
 
 COCOAPODS: 1.16.2

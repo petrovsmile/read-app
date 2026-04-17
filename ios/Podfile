@@ -34,7 +34,6 @@ target 'read_en' do
     :path => config[:reactNativePath],
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
-  
 
   target 'read_enTests' do
     inherit! :complete
@@ -58,12 +57,12 @@ target 'read_en' do
         end
       end
 
-      # Suppress warnings for YandexMobileAds and allow duplicated symbols (YandexMobileAds 5.5.0 has duplicate object files)
+      # Suppress warnings for YandexMobileAds and allow duplicated symbols
       if target.name == 'read_en' || target.name == 'Pods-read_en'
         target.build_configurations.each do |config|
           config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
-          # Allow duplicated symbols in linker
-          config.build_settings['OTHER_LDFLAGS'] = (config.build_settings['OTHER_LDFLAGS'] || '') + ' -Xlinker -allow_duplicated_symbols'
+          # Allow duplicated symbols in linker (YandexMobileAds 5.5.0 has duplicate object files in framework)
+          config.build_settings['OTHER_LDFLAGS'] = (config.build_settings['OTHER_LDFLAGS'] || '') + ' -undefined dynamic_lookup'
         end
       end
     end
