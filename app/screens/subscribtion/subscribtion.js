@@ -17,7 +17,21 @@ const Subscription = observer(class Subscription extends React.Component {
     this.read_forever = 2490;
   }
 
-  componentDidMount() { }
+  async componentDidMount() {
+    try {
+      await RNIap.initConnection();
+    } catch (error) {
+      console.warn('Error initializing IAP connection:', error);
+    }
+  }
+
+  async componentWillUnmount() {
+    try {
+      await RNIap.endConnection();
+    } catch (error) {
+      console.warn('Error ending IAP connection:', error);
+    }
+  }
 
   cancelSubscription() {
     new Storage().set('has_subscription', 'false');
@@ -90,12 +104,12 @@ const Subscription = observer(class Subscription extends React.Component {
         }
 
         if (type == 'subscription') {
-          var purchase = await RNIap.requestSubscription({ sku: productId });
+          var purchase = await RNIap.requestSubscription({ skus: [productId] });
           var time_subsription = moment.unix(parseInt(purchase.transactionDate) / 1000);
         }
 
         if (type == 'product') {
-          var purchase = await RNIap.requestPurchase({ sku: productId });
+          var purchase = await RNIap.requestPurchase({ skus: [productId] });
           var time_subsription = moment.unix(parseInt(purchase.transactionDate) / 1000);
         }
 
@@ -147,6 +161,18 @@ const Subscription = observer(class Subscription extends React.Component {
       this.setState({
         load_payment_button: false
       });
+
+      // Handle react-native-iap 15.2.0 specific errors
+      if (error.code === 'E_USER_CANCELLED') {
+        console.log('User cancelled the purchase');
+      } else if (error.code === 'E_NETWORK_ERROR') {
+        Alert.alert('Ошибка сети', 'Проверьте подключение к интернету');
+      } else if (error.code === 'E_UNKNOWN') {
+        console.warn('Unknown IAP error:', error.message);
+        Alert.alert('Ошибка', 'Ошибка при обработке покупки. Попробуйте позже.');
+      } else {
+        console.warn('IAP error:', error);
+      }
     }
   }
 
