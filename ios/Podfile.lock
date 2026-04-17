@@ -41,8 +41,16 @@ PODS:
   - fmt (11.0.2)
   - glog (0.3.5)
   - hermes-engine (0.78.3):
-    - hermes-engine/Pre-built (= 0.78.3)
-  - hermes-engine/Pre-built (0.78.3)
+    - hermes-engine/cdp (= 0.78.3)
+    - hermes-engine/Hermes (= 0.78.3)
+    - hermes-engine/inspector (= 0.78.3)
+    - hermes-engine/inspector_chrome (= 0.78.3)
+    - hermes-engine/Public (= 0.78.3)
+  - hermes-engine/cdp (0.78.3)
+  - hermes-engine/Hermes (0.78.3)
+  - hermes-engine/inspector (0.78.3)
+  - hermes-engine/inspector_chrome (0.78.3)
+  - hermes-engine/Public (0.78.3)
   - NitroIap (15.2.0):
     - DoubleConversion
     - glog
@@ -2152,7 +2160,6 @@ DEPENDENCIES:
   - RNStoreReview (from `../node_modules/react-native-store-review`)
   - RNSVG (from `../node_modules/react-native-svg`)
   - TextToSpeech (from `../node_modules/react-native-tts`)
-  - YandexMobileMetrica (= 4.5.2)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
 SPEC REPOS:
@@ -2361,7 +2368,7 @@ SPEC CHECKSUMS:
   FBLazyVector: e053802577a711add20e45bbbf5dd1180b6ca62e
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: eb93e2f488219332457c3c4eafd2738ddc7e80b8
-  hermes-engine: b5c9cfbe6415f1b0b24759f2942c8f33e9af6347
+  hermes-engine: 53c327c3658dca9fe0ec67e5d946edd23d244976
   NitroIap: a4fa6e4a6c4944f9d5cf4f1160cf60fb8fbd8dd8
   NitroModules: 5b66210b99c71a938e08518124d2f90cc2113881
   openiap: 35b7ebf3b953bc3f24a57fcb5f98fc4dd30f1b04
@@ -2445,6 +2452,6 @@ SPEC CHECKSUMS:
   YandexMobileMetrica: f5368ee93f286c793d73b58da00929babfc897c1
   Yoga: eca8dd841b7cd47d82d66be58af8e3aeb819012f
 
-PODFILE CHECKSUM: 95afb566415b1c585c1113e7fe21e22ba2c6e555
+PODFILE CHECKSUM: 20fed829aadc230503b03eec8ed6ee721e0c8c2d
 
 COCOAPODS: 1.16.2
