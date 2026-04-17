@@ -38,6 +38,12 @@ jobs:
         export LC_ALL=en_US.UTF-8
         bundle install
 
+    - name: Clear CocoaPods cache
+      run: |
+        rm -rf ~/Library/Caches/CocoaPods
+        rm -rf ~/.cocoapods/repos/master
+        rm -rf ~/.cocoapods/repos/trunk
+
     - name: Install Pods
       run: |
         cd ios

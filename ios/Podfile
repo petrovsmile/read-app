@@ -8,6 +8,19 @@ require Pod::Executable.execute_command('node', ['-p',
 platform :ios, '18.0'
 prepare_react_native_project!
 
+# Fix boost.podspec URL to use working mirror
+boost_podspec = File.join(__dir__, '..', 'node_modules', 'react-native', 'third-party-podspecs', 'boost.podspec')
+if File.exist?(boost_podspec)
+  content = File.read(boost_podspec)
+  if content.include?('boostorg.jfrog.io')
+    File.write(boost_podspec, content.gsub(
+      'https://boostorg.jfrog.io/artifactory/main/release/1.83.0/source/boost_1_83_0.tar.bz2',
+      'https://archives.boost.io/release/1.83.0/source/boost_1_83_0.tar.bz2'
+    ))
+    puts "✅ Fixed boost.podspec URL"
+  end
+end
+
 # If you are using a `react-native-flipper` your iOS build will fail when `NO_FLIPPER=1` is set.
 # because `react-native-flipper` depends on (FlipperKit,...) that will be excluded
 #
