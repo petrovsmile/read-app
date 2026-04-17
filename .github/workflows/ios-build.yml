@@ -28,13 +28,22 @@ jobs:
       uses: ruby/setup-ruby@v1
       with:
         ruby-version: '3.1'
-        bundler-cache: true
+        bundler-cache: false
         working-directory: ios
+
+    - name: Bundle install
+      run: |
+        cd ios
+        export LANG=en_US.UTF-8
+        export LC_ALL=en_US.UTF-8
+        bundle install
 
     - name: Install Pods
       run: |
         cd ios
-        pod install --repo-update
+        export LANG=en_US.UTF-8
+        export LC_ALL=en_US.UTF-8
+        bundle exec pod install --repo-update
 
     - name: Build iOS app
       run: |
@@ -107,7 +116,9 @@ jobs:
     - name: Install Pods
       run: |
         cd ios
-        pod install --repo-update
+        export LANG=en_US.UTF-8
+        export LC_ALL=en_US.UTF-8
+        bundle exec pod install --repo-update
 
     - name: Build and sign iOS app
       run: |
