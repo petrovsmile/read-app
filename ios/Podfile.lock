@@ -1447,7 +1447,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-yandex-mobile-ads (0.7.0):
+  - react-native-yandex-mobile-ads (0.9.1):
     - React-Core
     - YandexMobileAds (= 5.9.1)
     - YandexMobileAdsInstream (= 0.19.0)
@@ -2371,7 +2371,7 @@ SPEC CHECKSUMS:
   react-native-slider: 310d3f89edd6ca8344a974bfe83a29a3fbb60e5a
   react-native-tracking-transparency: 15eb319f2b982070eb9831582af27d87badfa624
   react-native-webview: 564ff69d38cdd9ae870feb99743accb6f18fdc2f
-  react-native-yandex-mobile-ads: 68adbeb6e99e7d53a61cb7dbc234ff61d1e5d689
+  react-native-yandex-mobile-ads: 5c3756a5ce581de29d0fe186950910955b3fd018
   React-NativeModulesApple: c8bb2bc56d39bd122c56ef58a55c3f34d53f1585
   React-perflogger: d06f0fd0727356651a5535f6d717130187aeb667
   React-performancetimeline: 7afc2307ffc4047cef95eb711ea39a12fd90d533
