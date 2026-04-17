@@ -104,12 +104,12 @@ const Subscription = observer(class Subscription extends React.Component {
         }
 
         if (type == 'subscription') {
-          var purchase = await RNIap.requestSubscription({ skus: [productId] });
+          var purchase = await RNIap.requestSubscription({ sku: productId });
           var time_subsription = moment.unix(parseInt(purchase.transactionDate) / 1000);
         }
 
         if (type == 'product') {
-          var purchase = await RNIap.requestPurchase({ skus: [productId] });
+          var purchase = await RNIap.requestPurchase({ sku: productId });
           var time_subsription = moment.unix(parseInt(purchase.transactionDate) / 1000);
         }
 

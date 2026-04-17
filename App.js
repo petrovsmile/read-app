@@ -837,351 +837,6 @@ class Storage {
     await AsyncStorage.removeItem(key);
   }
 }
-class Bookmark extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      have_file: true,
-    }
-    this.bookmark = this.props.bookmark.item;
-  }
-
-  async componentDidMount() {
-    var have_file = await new Storage().get('have_file_' + this.bookmark.book_id);
-    this.setState({
-      have_file: have_file == 'true',
-    });
-  }
-
-  render() {
-    return (
-      <View style={{ marginLeft: 10, marginRight: 10, marginBottom: 10, backgroundColor: app_theme_colors.backgroundLight, paddingLeft: 10, paddingRight: 10, borderRadius: 5 }}>
-        <TouchableOpacity onPress={() => this.props.openBook(this.bookmark.book_id, { page: this.bookmark.page, paragraph: this.bookmark.paragraph })} style={{ flexDirection: 'row' }}>
-          <Text numberOfLines={1} ellipsizeMode='tail' style={{ flex: 1, lineHeight: 40 }}>{this.bookmark.book_name}</Text>
-          <Text style={{ width: 100, textAlign: 'right', lineHeight: 40, fontWeight: 'bold' }}>Стр. {this.bookmark.page}</Text>
-        </TouchableOpacity>
-      </View>
-    )
-  }
-}
-class BookmarkStack extends React.Component {
-  constructor(props) {
-    super(props);
-  }
-
-  render() {
-    const RootStack = createStackNavigator();
-
-    return (
-      <RootStack.Navigator initialRouteName="Bookmark">
-        <RootStack.Screen name="Bookmark" options={() => ({ headerShown: false })}>
-          {(stack) => (
-            <Bookmarks root={this.props.root} stack={stack} root_stack={this.props.stack} />
-          )}
-        </RootStack.Screen>
-      </RootStack.Navigator>
-    );
-  }
-}
-class Bookmarks extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      auth_modal: false,
-      auth_method: 'login',
-      bookmarks: [],
-      do_not_find: false,
-    };
-
-    this.storage_bookmarks = [];
-    this.search_value = "";
-  }
-
-  async componentDidMount() {
-    //await new Storage().set('bookmarks_keys', JSON.stringify([]));
-    this._unsubFocus = this.props.stack.navigation.addListener('focus', () => {
-      this.getBookmarks();
-    });
-
-    await this.getBookmarks();
-  }
-
-  componentWillUnmount() {
-    if (this._unsubFocus) {
-      this._unsubFocus();
-    }
-  }
-
-  async getBookmarks() {
-    if (this.props.root.state.current_user != false) {
-      await this.setState({
-        do_not_find: false,
-        bookmarks: [],
-      });
-
-      this.storage_bookmarks = await this.getBookmarksFromStorage();
-      await this.getBookmarksFromServer();
-      var bookmarks = await this.getBookmarksFromStorage();
-
-      this.setState({
-        bookmarks: bookmarks,
-        do_not_find: bookmarks.length == 0
-      });
-    }
-  }
-
-  async getBookmarksFromServer() {
-    var server_bookmarks = await new Request('/api/v1/bookmarks', {
-      user_id: this.props.root.state.current_user.id
-    }, {
-      do_not_show_error: true
-    }).get();
-    if (server_bookmarks != false) {
-
-      var ar_delete_keys = [];
-      var ar_add_keys = [];
-
-      // Удаляем с устройства если на сервере удалили и добавляем на сервере, если есть добавленные на устройстве offline
-      await Promise.all(this.storage_bookmarks.reverse().map(async storage_bookmark => {
-        var has_bookmark = false;
-        server_bookmarks.map(async server_bookmark => {
-          if (server_bookmark.book.id == storage_bookmark.book_id && has_bookmark == false) {
-            has_bookmark = true;
-          }
-        })
-        if (has_bookmark == false) {
-          if (storage_bookmark.offline == true) {
-            await new Request('/api/v1/bookmarks', {
-              book_id: storage_bookmark.book_id,
-              user_id: this.props.root.state.current_user.id,
-              page: storage_bookmark.page,
-              paragraph: storage_bookmark.paragraph
-            }, {
-              do_not_show_error: true
-            }).post();
-            storage_bookmark.offline = false;
-            await new Storage().set('bookmark_' + storage_bookmark.book_id, JSON.stringify(storage_bookmark));
-          } else {
-            ar_delete_keys.push('bookmark_' + storage_bookmark.book_id);
-          }
-        }
-      }));
-
-      await Promise.all(server_bookmarks.reverse().map(async server_bookmark => {
-        // Добавляем, если на сервере есть новые
-        var has_bookmark = false;
-        this.storage_bookmarks.forEach((storage_bookmark) => {
-          if (server_bookmark.book.id == storage_bookmark.book_id && has_bookmark == false) {
-            has_bookmark = true;
-          }
-        });
-
-        if (has_bookmark == false) {
-          await new Storage().set('bookmark_' + server_bookmark.book.id, JSON.stringify({
-            book_id: server_bookmark.book.id,
-            book_name: server_bookmark.book.name,
-            page: server_bookmark.page,
-            paragraph: server_bookmark.paragraph
-          }));
-          ar_add_keys.push('bookmark_' + server_bookmark.book.id);
-        }
-
-        // Обновляем, если на сервере параграф больше
-        this.storage_bookmarks.forEach((storage_bookmark) => {
-          if (server_bookmark.book.id == storage_bookmark.book_id) {
-            if (server_bookmark.paragraph > storage_bookmark.paragraph) {
-              new Storage().set('bookmark_' + storage_bookmark.book_id, JSON.stringify({
-                book_id: storage_bookmark.book_id,
-                book_name: storage_bookmark.book_name,
-                page: server_bookmark.page,
-                paragraph: server_bookmark.paragraph
-              }));
-              ar_add_keys.push('bookmark_' + server_bookmark.book.id);
-            }
-          }
-        });
-      }));
-
-      bookmarks_keys = await new Storage().get('bookmarks_keys');
-      if (bookmarks_keys == undefined || bookmarks_keys == null) {
-        bookmarks_keys = [];
-      } else {
-        bookmarks_keys = JSON.parse(bookmarks_keys);
-      }
-
-      ar_add_keys.forEach(function (add_key) {
-        var index = bookmarks_keys.indexOf(add_key);
-        if (index > -1) {
-          bookmarks_keys.splice(index, 1);
-        }
-        bookmarks_keys.unshift(add_key);
-      });
-
-      ar_delete_keys.forEach(function (delete_key) {
-        var index = bookmarks_keys.indexOf(delete_key);
-        if (index > -1) {
-          bookmarks_keys.splice(index, 1);
-        }
-      });
-
-      await new Storage().set('bookmarks_keys', JSON.stringify(bookmarks_keys));
-    }
-  }
-
-  async getBookmarksFromStorage() {
-    var bookmarks_keys = await new Storage().get('bookmarks_keys');
-    if (bookmarks_keys == undefined) {
-      bookmarks_keys = []
-    } else {
-      bookmarks_keys = JSON.parse(bookmarks_keys);
-    }
-
-    var bookmarks = await Promise.all(bookmarks_keys.map(async bookmark_key => {
-      var bookmark = await new Storage().get(bookmark_key);
-
-      return JSON.parse(bookmark);
-    }));
-
-    return bookmarks;
-  }
-
-  async deleteBookmark(rowMap, data) {
-    bookmarks_keys = await new Storage().get('bookmarks_keys');
-    bookmarks_keys = JSON.parse(bookmarks_keys);
-
-    var index = bookmarks_keys.indexOf('bookmark_' + data.book_id);
-    if (index > -1) {
-      bookmarks_keys.splice(index, 1);
-    }
-
-    new Storage().set('bookmarks_keys', JSON.stringify(bookmarks_keys));
-
-    await new Request('/api/v1/bookmarks', {
-      book_id: data.book_id,
-      user_id: this.props.root.state.current_user.id
-    }, {
-      desciption_error: 'Закладка удалена только с этого устройства.'
-    }).delete();
-
-    this.getBookmarks();
-  }
-
-  openBook(book_id, bookmark) {
-    // Открываем Reader через корневой стек (над табами), чтобы не было
-    // ни нижней таб-панели, ни заголовка вложенного стека закладок.
-    this.props.root_stack.navigation.navigate('Reader', {
-      book_id: book_id,
-      bookmark: bookmark,
-    });
-  }
-
-  render() {
-    return (
-      <SafeAreaView style={applicationStyles.save_area_view}>
-
-        <Modal
-          animationType="slide"
-          presentationStyle={'overFullScreen'}
-          visible={this.state.auth_modal && this.props.root.state.current_user == false}>
-          <Auth method={this.state.auth_method} modal={true} close={() => this.setState({ auth_modal: false })} />
-        </Modal>
-
-        {this.props.root.state.current_user == false ? (
-          <View style={bookmarksStyles.auth_content}>
-            <Text style={bookmarksStyles.auth_into}>
-              Для того чтобы воспользоваться закладками,
-              необходимо
-            </Text>
-            <Text onPress={() => this.setState({ auth_modal: true, auth_method: 'login' })} style={[bookmarksStyles.auth_into, { color: '#f05458', marginTop: 15 }]}>авторизоваться</Text>
-            <Text style={bookmarksStyles.auth_into}>или</Text>
-            <Text onPress={() => this.setState({ auth_modal: true, auth_method: 'reg' })} style={[bookmarksStyles.auth_into, { color: '#f05458' }]}>зарегистрироваться</Text>
-          </View>
-        ) : (
-
-          <React.Fragment>
-            {this.state.do_not_find == true &&
-              <View style={{ marginTop: 100, flex: 1, padding: 15 }}>
-                <Text style={{ textAlign: 'center', fontSize: 20, color: '#aaa', flexDirection: 'row' }}>
-                  Чтобы создать закладку,
-                  зайдите на книгу и нажмите иконку закладки
-                </Text>
-                <Text style={{ marginTop: 50, fontSize: 14, color: '#aaa', textAlign: 'center' }}>Если вы добавили закладку, но она не отображается, обновите раздел</Text>
-                <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 15 }}>
-                  <TouchableOpacity style={{ width: 200, height: 40, backgroundColor: '#ddd', borderRadius: 10 }} onPress={() => this.getBookmarks()}>
-                    <Text style={{ lineHeight: 40, textAlign: 'center' }}>Обновить</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            }
-            {this.state.do_not_find == false &&
-              <SwipeListView
-                style={{ flex: 1, zIndex: 0, paddingTop: 10 }}
-                refreshControl={
-                  <RefreshControl refreshing={false} onRefresh={() => this.getBookmarks()} />
-                }
-                showsHorizontalScrollIndicator={false}
-                scrollIndicatorInsets={{ right: 1 }}
-                removeClippedSubviews={true}
-                contentContainerStyle={{ paddingBottom: 100 }}
-                data={this.state.bookmarks}
-                renderItem={(bookmark) => <Bookmark openBook={(book_id, bookmark) => this.openBook(book_id, bookmark)} bookmark={bookmark} />}
-                keyExtractor={(bookmark) => bookmark.book_id}
-                ListEmptyComponent={() => <PreviewBookmarks />}
-                rightOpenValue={-40}
-                disableRightSwipe={true}
-                renderHiddenItem={(data, rowMap) => {
-
-                  return (
-                    <View style={{ flex: 1, flexDirection: 'row', heihgt: 40, justifyContent: 'flex-end', marginRight: 10, }}>
-                      <TouchableOpacity onPress={() => this.deleteBookmark(rowMap, data.item)}>
-                        <Image style={{ width: 20, height: 20, margin: 10 }} source={require('./app/images/bookmarks/delete.png')} />
-                      </TouchableOpacity>
-                    </View>
-                  )
-                }}
-
-              />
-            }
-          </React.Fragment>
-
-        )}
-      </SafeAreaView>
-
-    )
-  }
-}
-
-
-function PreviewBookmarks() {
-  return (
-    <React.Fragment>
-      <PreviewBookmark />
-      <PreviewBookmark />
-      <PreviewBookmark />
-      <PreviewBookmark />
-      <PreviewBookmark />
-      <PreviewBookmark />
-      <PreviewBookmark />
-      <PreviewBookmark />
-      <PreviewBookmark />
-      <PreviewBookmark />
-    </React.Fragment>
-  );
-}
-
-function PreviewBookmark() {
-  return (
-    <React.Fragment>
-      <View style={{ marginLeft: 15, marginRight: 15, paddingBottom: 15, paddingTop: 15, borderBottomWidth: 1, borderBottomColor: '#ddd' }}>
-        <View style={{ height: 50, marginRight: 10, borderRadius: 10, overflow: 'hidden', backgroundColor: '#eee' }}>
-          <ActivityIndicator style={{ flex: 1 }} size="small" color="#aaa" />
-        </View>
-      </View>
-    </React.Fragment>
-  );
-}
 class Dictionary extends React.Component {
   constructor(props) {
     super(props);
@@ -1504,6 +1159,606 @@ function PreviewWord() {
     <React.Fragment>
       <View style={{ margin: 8, height: 50, borderRadius: 4, overflow: 'hidden', backgroundColor: '#eee' }}>
         <ActivityIndicator style={{ flex: 1 }} size="small" color="#aaa" />
+      </View>
+    </React.Fragment>
+  );
+}
+class Book extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
+    var book = this.props.book.item;
+    var percent = this.props.books_percents[book.id];
+ 
+    return (
+      <View style={{ flex: 1, backgroundColor: '#FFF', borderRadius: 10, margin: 5 }}>
+        <TouchableOpacity onPress={() => this.props.onPress(book.id, book.color)}
+          style={{ marginLeft: 10, marginRight: 10, paddingBottom: 15, paddingTop: 15, flexDirection: 'row' }}>
+
+          <View style={{ height: 100, width: 70, marginRight: 10, borderRadius: 10, overflow: 'hidden', backgroundColor: book.color }}>
+            <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'center' }}>
+              {book.name_en.split(' ').slice(0, 3).map((word, index) =>
+                <Text key={index} numberOfLines={1} style={{ fontFamily: 'LibreBaskerville-Regular', color: '#FFF', fontSize: 12, paddingLeft: 5, paddingRight: 5, textAlign: 'center' }}>{word}</Text>
+              )}
+            </View>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 12, color: '#666', }}>{book.author}</Text>
+            <Text style={{ fontSize: 14, marginTop: 5, }}>{book.name}</Text>
+            <View style={{ flexDirection: 'row', marginTop: 10 }}>
+              <View style={{ height: 15, width: 5, borderRadius: 5, marginRight: 5, overflow: 'hidden' }}>
+                {(book.level > 0) ? (
+                  <View style={{ backgroundColor: book.level_color, flex: 1 }}></View>
+                ) : (
+                  <View style={{ backgroundColor: '#ddd', flex: 1 }}></View>
+                )}
+              </View>
+              <View style={{ height: 15, width: 5, borderRadius: 5, marginRight: 5, overflow: 'hidden' }}>
+                {(book.level > 1) ? (
+                  <View style={{ backgroundColor: book.level_color, flex: 1 }}></View>
+                ) : (
+                  <View style={{ backgroundColor: '#ddd', flex: 1 }}></View>
+                )}
+              </View>
+              <View style={{ height: 15, width: 5, borderRadius: 5, marginRight: 5, overflow: 'hidden' }}>
+                {(book.level > 2) ? (
+                  <View style={{ backgroundColor: book.level_color, flex: 1 }}></View>
+                ) : (
+                  <View style={{ backgroundColor: '#ddd', flex: 1 }}></View>
+                )}
+              </View>
+              <View style={{ height: 15, width: 5, borderRadius: 5, marginRight: 5, overflow: 'hidden' }}>
+                {(book.level > 3) ? (
+                  <View style={{ backgroundColor: book.level_color, flex: 1 }}></View>
+                ) : (
+                  <View style={{ backgroundColor: '#ddd', flex: 1 }}></View>
+                )}
+              </View>
+              <View style={{ height: 15, width: 5, borderRadius: 5, marginRight: 5, overflow: 'hidden' }}>
+                {(book.level > 4) ? (
+                  <View style={{ backgroundColor: book.level_color, flex: 1 }}></View>
+                ) : (
+                  <View style={{ backgroundColor: '#ddd', flex: 1 }}></View>
+                )}
+              </View>
+              <Text style={{ marginLeft: 5 }}>
+                <Text style={{ fontSize: 14, lineHeight: 15 }}>{book.complexity_text}</Text>
+              </Text>
+            </View>
+            <View style={{ marginTop: 10, flexDirection: 'row' }}>
+              {percent == 100 &&
+                <Image
+                  style={{ height: 20, width: 20, marginRight: 8 }}
+                  source={require('./app/images/books/book_read.png')}
+                />
+              }
+              {percent != 100 &&
+                <Image
+                  style={{ height: 20, width: 20, marginRight: 8 }}
+                  source={require('./app/images/books/book.png')}
+                />
+              }
+              <Text style={{ lineHeight: 20, fontSize: 12 }}>
+                <Text style={percent == 100 && { color: '#0fa90f' }}>
+                  {percent}%
+                </Text>
+              </Text>
+
+              <Text style={{ lineHeight: 20, fontSize: 12, marginLeft: 10, color: "#444" }}>{book.pages} стр.</Text>
+
+
+              {book.have_file == true &&
+                <Image
+                  style={{ height: 20, width: 20, marginLeft: 8 }}
+                  source={require('./app/images/books/downloaded.png')}
+                />
+              }
+            </View>
+          </View>
+
+        </TouchableOpacity>
+      </View>
+    )
+  }
+}
+class Home extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      do_not_find: false,
+      level: 'all',
+      books: [],
+      books_filtered: [],
+      books_loader: true,
+      not_show_read: true,
+      sort_new_book: true,
+      show_only_loaded: false,
+      open_property: false,
+    };
+
+    this.search_value = "";
+  }
+
+  async componentDidMount() {
+    var not_show_read = await new Storage().get('not_show_read', 'false')
+    await this.setState({ not_show_read: not_show_read === 'true' });
+
+    var sort_new_book = await new Storage().get('sort_new_book', 'false');
+    await this.setState({ sort_new_book: sort_new_book === 'true' });
+
+    var show_only_loaded = await new Storage().get('show_only_loaded', 'false');
+    await this.setState({ show_only_loaded: show_only_loaded === 'true' });
+
+    this.getBooks();
+
+    // this.props.stack.navigation.navigate('Reader', {
+    //   book_id: 1
+    // });
+  }
+
+  async getBooks() {
+    await this.setState({
+      books: [],
+      filter_books: [],
+    });
+
+    var exists = await RNFS.exists(file_root + '/' + BOOKS_FILENAME);
+    if (exists == false) {
+      await RNFS.writeFile(file_root + '/' + BOOKS_FILENAME, "[]", 'utf8');
+    }
+
+    var books = await RNFS.readFile(file_root + '/' + BOOKS_FILENAME, 'utf8');
+    books = JSON.parse(books);
+
+    await this.setState({
+      books: books,
+    });
+
+    var server_books = await new Request('/api/v1/books', {}, { do_not_show_error: true }).get();
+    if (server_books == false) {
+      this.filter_books();
+    } else {
+      if (server_books.length != books.length) {
+        books = server_books;
+        await RNFS.writeFile(file_root + '/' + BOOKS_FILENAME, JSON.stringify(server_books), 'utf8');
+
+        await this.setState({
+          books: books,
+        });
+        this.filter_books();
+      } else {
+        this.filter_books();
+      }
+    }
+  }
+
+  //Фильтрует по Level, Названиям, Скачиванию
+  async filter_books() {
+    await this.setState({
+      books_filtered: false,
+    });
+
+    var result = [];
+
+    for (const i in this.state.books) {
+      var book = this.state.books[i];
+
+      if (this.state.level == 'all' || this.state.level == book.level) {
+
+        var check = false;
+
+        //Названия
+        if (this.search_value.length == 0) {
+          check = true;
+        } else {
+          var search_array = this.search_value.split(' ').map(name => name.toLowerCase());
+          search_array = search_array.filter(word => word.length > 0);
+
+          book.name.split(' ').forEach(function (subname) {
+            subname = subname.toLowerCase();
+            search_array.forEach(function (subsearch) {
+              if (subname.includes(subsearch)) {
+                check = true;
+              }
+            });
+          });
+
+          book.author.split(' ').forEach(function (subname) {
+            subname = subname.toLowerCase();
+            search_array.forEach(function (subsearch) {
+              if (subname.includes(subsearch)) {
+                check = true;
+              }
+            });
+          });
+
+          book.name_en.split(' ').forEach(function (subname) {
+            subname = subname.toLowerCase();
+            search_array.forEach(function (subsearch) {
+              if (subname.includes(subsearch)) {
+                check = true;
+              }
+            });
+          });
+        }
+
+        //Скачана книга
+        if (check == true) {
+          var have_file = await new Storage().get('have_file_' + book.id, 'false');
+          book['have_file'] = have_file == 'true';
+          if (this.state.show_only_loaded == true) {
+            check = book['have_file'];
+          }
+
+          var percent = await new Storage().get('percent_' + book.id, 0);
+          book['percent'] = percent;
+
+          if (percent == 100) {
+            if (this.state.not_show_read == true) {
+              check = false;
+            }
+          }
+        }
+
+
+        if (check == true) {
+          result.push(book);
+        }
+      }
+    }
+
+    percents = {}
+    result.forEach(function (book) {
+      percents[book.id] = book.percent;
+    });
+
+    await this.props.root.setState({
+      books_percents: percents
+    });
+
+    this.setState({
+      books_filtered: result,
+      do_not_find: result.length == 0,
+    }, function () {
+      this.showReview();
+    });
+  }
+
+  async showReview() {
+
+    var review_showed = await new Storage().get('review_showed', 'false');
+
+    if (review_showed == 'false') {
+      var time_show_review = await new Storage().get('time_show_review');
+
+      if (time_show_review == undefined) {
+        time_show_review = moment();
+        await new Storage().set('time_show_review', moment().format());
+      } else {
+        time_show_review = moment(time_show_review);
+      }
+
+      var now_time = moment();
+
+      var range_time = (now_time - time_show_review) / 1000 / 60;
+
+      if (range_time > 7200) { //7200
+        YandexMetrica.sendEvent('reviewShow', { show: true });
+        await new Storage().set('review_showed', 'true');
+        StoreReview.requestReview();
+      }
+    }
+  }
+
+  goToSite() {
+    Linking.openURL("https://reedle.ru");
+  }
+
+  onChangeText(value) {
+    this.search_value = value;
+    this.filter_books();
+  }
+
+  setLevel(level) {
+
+    YandexMetrica.sendEvent('setLevel', { level: level });
+
+    this.setState({
+      level: level,
+    }, function () {
+      this.filter_books();
+    });
+  }
+  openProperty() {
+
+    YandexMetrica.sendEvent('openProperty', { show: !this.state.open_property });
+
+    this.setState({
+      open_property: !this.state.open_property,
+    });
+  }
+
+  setPropertyShowRead() {
+
+    YandexMetrica.sendEvent('notShowRead', { value: !this.state.not_show_read });
+
+    AsyncStorage.setItem('not_show_read', (!this.state.not_show_read).toString()).then(() => {
+      this.setState({
+        not_show_read: !this.state.not_show_read,
+      }, () => {
+        this.filter_books();
+      });
+    });
+
+
+  }
+  setPropertySortNewBook() {
+
+    YandexMetrica.sendEvent('sortNewBook', { value: !this.state.sort_new_book });
+
+    AsyncStorage.setItem('sort_new_book', (!this.state.sort_new_book).toString()).then(() => {
+      this.setState({
+        sort_new_book: !this.state.sort_new_book,
+      }, () => {
+        this.filter_books();
+      });
+    });
+  }
+
+  setPropertyShowOnlyLoaded() {
+
+    YandexMetrica.sendEvent('showOnlyLoaded', { value: !this.state.show_only_loaded });
+
+    AsyncStorage.setItem('show_only_loaded', (!this.state.show_only_loaded).toString()).then(() => {
+      this.setState({
+        show_only_loaded: !this.state.show_only_loaded,
+      }, () => {
+        this.filter_books();
+      });
+    });
+  }
+
+  render() {
+
+    const readBook = (rowMap, rowKey) => {
+      if (rowMap[rowKey.id]) {
+        rowMap[rowKey.id].closeRow();
+      }
+      AsyncStorage.setItem('percent_' + rowKey.id, '100').then(() => {
+        this.filter_books();
+      });
+    };
+
+    const deleteBook = (rowMap, rowKey) => {
+      if (rowMap[rowKey.id]) {
+        rowMap[rowKey.id].closeRow();
+      }
+      AsyncStorage.setItem('have_file_' + rowKey.id, '').then(() => {
+        RNFS.unlink(file_root + '/books/' + rowKey.id + '/').then(() => {
+          this.filter_books();
+        });
+      });
+    };
+
+    return (
+      <SafeAreaView style={applicationStyles.save_area_view}>
+        <View style={homeStyles.header}>
+
+          <View style={homeStyles.header_empty_block} />
+
+          <View style={homeStyles.logo}>
+            <Text style={homeStyles.logo_text}>Reedle</Text>
+            <Text style={homeStyles.logo_dot}>.</Text>
+          </View>
+
+          {(this.props.root.state.has_subscription == false) ? (
+            <TouchableOpacity onPress={() => this.props.tabs.navigation.navigate('Subscription')}>
+              <Image style={{ width: 30, height: 30, marginTop: 2.5 }} source={require('./app/images/header/ads.jpg')} />
+            </TouchableOpacity>
+          ) : (
+            <View style={homeStyles.header_empty_block}></View>
+          )}
+        </View>
+
+        <View style={homeStyles.search}>
+          <Image
+            style={homeStyles.search_image}
+            resizeMode={'contain'}
+            source={require('./app/images/home/search.png')}
+          />
+          <TextInput
+            style={homeStyles.search_input}
+            onChangeText={(value) => this.onChangeText(value)}
+            placeholder={"Поиск"}
+            clearButtonMode="always"
+          />
+        </View>
+
+        <View style={homeStyles.level_selector}>
+          <View style={homeStyles.level_selector_wrap}>
+            <LevelSelectorPoint onPress={(level) => this.setLevel(level)} name="Все" color="#aaa" level="all" current_level={this.state.level} />
+            <LevelSelectorPoint onPress={(level) => this.setLevel(level)} name="A1" color="#89c053" level="1" current_level={this.state.level} />
+            <LevelSelectorPoint onPress={(level) => this.setLevel(level)} name="A2" color="#5e9cea" level="2" current_level={this.state.level} />
+            <LevelSelectorPoint onPress={(level) => this.setLevel(level)} name="B1" color="#f5b945" level="3" current_level={this.state.level} />
+            <LevelSelectorPoint onPress={(level) => this.setLevel(level)} name="B2" color="#fb836f" level="4" current_level={this.state.level} />
+            <LevelSelectorPoint onPress={(level) => this.setLevel(level)} name="C1" color="#fe4444" level="5" current_level={this.state.level} />
+
+
+            <TouchableOpacity onPress={() => this.openProperty()}>
+              <View style={{ backgroundColor: '#ddd', borderRadius: 7, marginLeft: 3 }}>
+                {this.state.open_property == false &&
+                  <Image
+                    style={homeStyles.settings_image}
+                    source={require('./app/images/home/settings.png')}
+                  />
+                }
+                {this.state.open_property == true &&
+                  <Image
+                    style={homeStyles.settings_image}
+                    source={require('./app/images/home/settings-close.png')}
+                  />
+                }
+              </View>
+            </TouchableOpacity>
+          </View>
+          {this.state.open_property == true &&
+            <View style={homeStyles.properties}>
+              <View style={homeStyles.properties_point}>
+
+                <Text style={homeStyles.properties_point_text}>Не показывать прочитанные книги</Text>
+
+                <Switch
+                  trackColor={{ false: "#eee", true: "#407cfd" }}
+                  thumbColor={'#FFF'}
+                  onValueChange={() => this.setPropertyShowRead()}
+                  value={this.state.not_show_read}
+                />
+
+              </View>
+
+
+              <View style={homeStyles.properties_point}>
+
+                <Text style={homeStyles.properties_point_text}>Ставить вперед открытые книги</Text>
+
+                <Switch
+                  trackColor={{ false: "#eee", true: "#407cfd" }}
+                  thumbColor={'#FFF'}
+                  onValueChange={() => this.setPropertySortNewBook()}
+                  value={this.state.sort_new_book}
+                />
+
+              </View>
+
+              <View style={[homeStyles.properties_point, { marginBottom: 0 }]}>
+
+                <Text style={homeStyles.properties_point_text}>Показать только скачанные</Text>
+
+                <Switch
+                  trackColor={{ false: "#eee", true: "#407cfd" }}
+                  thumbColor={'#FFF'}
+                  onValueChange={() => this.setPropertyShowOnlyLoaded()}
+                  value={this.state.show_only_loaded}
+                />
+
+              </View>
+
+            </View>
+          }
+
+        </View>
+
+        <React.Fragment>
+          {this.state.do_not_find == true &&
+            <View style={{ marginTop: 100 }}>
+              <Text style={{ textAlign: 'center', fontSize: 20, color: '#aaa' }}>Книги не найдены :(</Text>
+            </View>
+          }
+          {this.state.do_not_find == false &&
+            <SwipeListView
+              style={{ flex: 1, marginTop: -10, zIndex: 0, paddingTop: 10 }}
+              refreshControl={
+                <RefreshControl refreshing={false} onRefresh={() => this.getBooks()} />
+              }
+              showsHorizontalScrollIndicator={false}
+              scrollIndicatorInsets={{ right: 1 }}
+              removeClippedSubviews={true}
+              contentContainerStyle={{ paddingBottom: 100 }}
+              data={this.state.books_filtered}
+              renderItem={(book) => <Book
+                books_percents={this.props.root.state.books_percents}
+                book={book}
+                onPress={(book_id, color) => this.props.stack.navigation.navigate('Show', {
+                  book_id: book_id,
+                  color: color,
+                })}
+              />}
+              keyExtractor={(book) => book.id}
+              ListEmptyComponent={() => <PreviewBooks />}
+              rightOpenValue={-130}
+              disableRightSwipe={true}
+
+              renderHiddenItem={(data, rowMap) => {
+
+                return (
+                  <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', borderBottomWidth: 1, borderBottomColor: '#ddd', marginLeft: 15, marginRight: 15, }}>
+                    <View style={{ zIndex: 2, marginTop: 5, borderTopRightRadius: 10, borderBottomRightRadius: 10, height: 130, width: 65, backgroundColor: '#FFF' }}>
+                    </View>
+                    <TouchableWithoutFeedback onPress={() => readBook(rowMap, data.item)} >
+                      <View style={{ zIndex: 1, marginLeft: -10, marginTop: 5, borderTopRightRadius: 10, borderBottomRightRadius: 10, height: 130, width: 65, backgroundColor: '#75b641' }}>
+                        <Text numberOfLines={1} style={{ width: 130, position: 'absolute', bottom: 37, left: -27, color: '#FFF', lineHeight: 55, textAlign: 'center', fontSize: 16, transform: [{ rotate: '-90deg' }] }}>Прочитана</Text>
+                      </View>
+                    </TouchableWithoutFeedback>
+                    {data.item.have_file == true &&
+                      <TouchableWithoutFeedback onPress={() => deleteBook(rowMap, data.item)}>
+                        <View style={{ zIndex: 0, marginLeft: -10, marginTop: 5, borderTopRightRadius: 10, borderBottomRightRadius: 10, height: 130, width: 65, backgroundColor: '#f05458' }}>
+                          <Text numberOfLines={1} style={{ width: 130, position: 'absolute', bottom: 37, left: -27, color: '#FFF', lineHeight: 55, textAlign: 'center', fontSize: 12, transform: [{ rotate: '-90deg' }] }}>Удалить из памяти</Text>
+                        </View>
+                      </TouchableWithoutFeedback>
+                    }
+                  </View>
+                )
+              }}
+
+            />
+          }
+        </React.Fragment>
+
+      </SafeAreaView>
+    )
+  }
+}
+
+
+class LevelSelectorPoint extends React.Component {
+  render() {
+    return (
+      <TouchableOpacity onPress={() => this.props.onPress(this.props.level)} style={homeStyles.level_selector_point}>
+        <View style={this.props.current_level == this.props.level && [{ backgroundColor: this.props.color }, homeStyles.level_selector_point_active]}>
+          <Text style={homeStyles.level_selector_point_text}>
+            <Text style={this.props.current_level == this.props.level ? { color: '#FFF' } : { color: '#000' }}>
+              {this.props.name}
+            </Text>
+          </Text>
+        </View>
+      </TouchableOpacity>
+    )
+  }
+}
+
+
+function PreviewBooks() {
+  return (
+    <React.Fragment>
+      <PreviewBook />
+      <PreviewBook />
+      <PreviewBook />
+      <PreviewBook />
+      <PreviewBook />
+      <PreviewBook />
+      <PreviewBook />
+      <PreviewBook />
+      <PreviewBook />
+      <PreviewBook />
+    </React.Fragment>
+  );
+}
+
+function PreviewBook() {
+  return (
+    <React.Fragment>
+      <View style={{ marginLeft: 15, marginRight: 15, paddingBottom: 15, paddingTop: 15, flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#ddd' }}>
+        <View style={{ height: 100, width: 70, marginRight: 10, borderRadius: 10, overflow: 'hidden', backgroundColor: '#eee' }}>
+          <ActivityIndicator style={{ flex: 1 }} size="small" color="#aaa" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <View style={{ borderRadius: 5, height: 25, backgroundColor: '#eee', width: '50%' }}></View>
+          <View style={{ borderRadius: 5, marginTop: 12.5, height: 25, backgroundColor: '#eee' }}></View>
+          <View style={{ borderRadius: 5, marginTop: 12.5, height: 25, backgroundColor: '#eee', width: '70%' }}></View>
+        </View>
       </View>
     </React.Fragment>
   );
@@ -4270,359 +4525,6 @@ class Reader extends React.Component {
   }
 };
 
-
-class ButtonRead extends React.Component {
-
-  _isMounted = false;
-
-  constructor(props) {
-
-    super(props);
-
-    this.state = {
-      have_file: false,
-      show_load_status: false,
-      progress: 2,
-      progress_text: '0',
-      have_internet: true,
-      button_loader: true,
-    }
-  }
-
-  async componentDidMount() {
-
-    this._isMounted = true;
-    
-    var have_file = await AsyncStorage.getItem('have_file_' + this.props.book_id);
-
-    this.setState({
-      have_file: have_file == 'true',
-      button_loader: false,
-    });
-
-    this._unsubNet = NetInfo.addEventListener(state => {
-      this.setState({
-        have_internet: state.isConnected,
-      });
-    });
-
-
-  }
-
-  async loadFiles(ar_files, index, count, book_id) {
-
-    if (this._isMounted == true) {
-      var path = ar_files[index]; 
-
-      var response = await axios.get("https://reedle.ru" + path, { params: {} });
-
-      var response = await new Request(path, {}).get();
-      var file_data = JSON.stringify(response);
-
-      path = path.replace('/result', '');
-      
-      await RNFS.writeFile(file_root + path, file_data, 'utf8');
-      
-      index++;
-
-      var progress = (index / count) * 100;
-      if (progress < 2) {
-        progress = 2;
-      }
-
-      
-
-      await this.setState({
-        progress: progress,
-        progress_text: progress.toFixed(0),
-      });
-
-      if (index < count) {
-        this.loadFiles(ar_files, index, count, book_id);
-      } else {
-
-        YandexMetrica.sendEvent('loader',{status: 'finish'});
-        YandexMetrica.sendEvent('loader',{progress: 100});
-
-        await this.setState({
-          progress: 100,
-          have_file: true,
-          show_load_status: false,
-        });
-
-        await AsyncStorage.setItem('have_file_' + book_id, 'true');
-
-        this.openBook(book_id);
-
-      }
-    }
-  }
-
-  componentWillUnmount() {
-    this._isMounted = false;
-    if (this._unsubNet) {
-      this._unsubNet();
-    }
-  }
-
-  async openBook(book_id) {
-    if (this.state.have_file == false) {
-      YandexMetrica.sendEvent('loader',{status: 'start'});
-
-      await this.setState({
-        show_load_status: true,
-      });
-      var response = await new Request('/api/v1/books/download_list', { book_id: book_id }).get();
-     
-      await RNFS.mkdir(file_root + '/books/' + book_id + '/paragraphs/');
-
-      this.setState({
-        progress: 2,
-      });
-
-      this.loadFiles(response, 0, response.length, book_id);
-    } else {
-      this.props.set_have_file();
-      // this.props.navigation.navigate('Reader', {
-      //   book_id: book_id
-      // });
-    }
-  }
-
-  render() {
-
-    return <View style={{ height: 60, width: 60, borderRadius: 18, backgroundColor: '#FFF', flexDirection: 'row', overflow: 'hidden' }}>
-      <React.Fragment>
-        {this.state.button_loader == true &&
-          <ActivityIndicator style={{ flex: 1 }} size="small" color="#aaa" />
-        }
-        {this.state.button_loader == false &&
-          <React.Fragment>
-            {this.state.show_load_status == true &&
-              <View style={{
-                position: 'absolute',
-                left: -15,
-                top: -15,
-              }}>
-                <AnimatedCircularProgress
-                  size={90}
-                  width={20}
-                  fill={this.state.progress}
-                  tintColor={this.props.color}
-                  backgroundColor="#FFF"
-                  rotation={0}
-                  duration={0}>
-                  {
-                    (fill) => (
-                      <React.Fragment>
-                        {this.state.progress_text == '0' &&
-                          <ActivityIndicator style={{ flex: 1 }} size="small" color="#aaa" />
-                        }
-                        {this.state.progress_text != '0' &&
-                          <Text style={{ color: this.props.color, textAlign: 'center', lineHeight: 40, fontSize: 14 }}>{this.state.progress_text}%</Text>
-                        }
-                      </React.Fragment>
-                    )
-                  }
-                </AnimatedCircularProgress>
-                {this.state.progress_text != '0' &&
-                  <Text style={{ color: this.props.color, textAlign: 'center', lineHeight: 40, fontSize: 14 }}>{this.state.progress_text}%</Text>
-                }
-              </View>
-            }
-
-
-            {this.state.show_load_status == false &&
-              <React.Fragment>
-
-                {this.state.have_file == false &&
-                  <React.Fragment>
-                    {this.state.have_internet == false &&
-                      <Image
-                        style={{ height: 30, width: 30, margin: 15, opacity: 0.5 }}
-                        source={require('./app/images/books/no-connect.png')}
-                      />
-                    }
-                    {this.state.have_internet == true &&
-                      <TouchableOpacity onPress={() => this.openBook(this.props.book_id)}>
-                        <Image
-                          style={{ height: 30, width: 30, margin: 15 }}
-                          source={require('./app/images/books/download.png')}
-                        />
-                      </TouchableOpacity>
-                    }
-                  </React.Fragment>
-                }
-                {this.state.have_file == true &&
-                  <TouchableOpacity onPress={() => this.openBook(this.props.book_id)}>
-                    <Image
-                      style={{ height: 20, width: 20, margin: 20 }}
-                      source={require('./app/images/books/arrow-button-read.png')}
-                    />
-                  </TouchableOpacity>
-                }
-              </React.Fragment>
-            }
-          </React.Fragment>
-        }
-      </React.Fragment>
-    </View>
-  }
-}
-class Show extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      percent: 0,
-      book: false,
-      have_file: false
-    };
-  }
-
-  async componentDidMount() {
-    homeStore.setOpenProperty(false);
-
-    var books = await RNFS.readFile(file_root + '/' + BOOKS_FILENAME, 'utf8');
-    books = JSON.parse(books);
-
-    await Promise.all(
-      books.map(async (book) => {
-        if (book.id == this.props.stack.route.params.book_id) {
-          var have_file = await new Storage().get('have_file_' + book.id, 'false');
-
-          YandexMetrica.sendEvent('openDetail', {
-            book_name: book.name
-          });
-          
-          this.setState({
-            book: book,
-            have_file: have_file == 'true'
-          });
-        }
-      })
-    )
-  }
-
-  openBook(book_id) {
-    this.props.stack.navigation.navigate('Reader', {
-      book_id: book_id
-    });
-  }
-
-  set_have_file() {
-    this.setState({
-      have_file: true
-    });
-  }
-
-  render() {
-
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: this.props.stack.route.params.color }}>
-        <TargetVersion />
-        <StatusBar barStyle="light-content" />
-
-        {this.state.book == false &&
-          <ActivityIndicator style={{ flex: 1 }} size="large" color="#aaa" />
-        }
-
-        {this.state.book != false &&
-          <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'space-evenly' }}>
-
-            <View>
-              <Text style={{ marginBottom: 30, color: '#FFF', fontSize: 18, paddingLeft: 30, paddingRight: 30, textAlign: 'center' }}>{this.state.book.author}</Text>
-              <Text style={{ fontFamily: 'LibreBaskerville-Regular', color: '#FFF', fontSize: 45, paddingLeft: 30, paddingRight: 30, textAlign: 'center' }}>{this.state.book.name_en}</Text>
-              <Text style={{ marginTop: 30, color: '#FFF', fontSize: 18, paddingLeft: 30, paddingRight: 30, textAlign: 'center' }}>{this.state.book.name}</Text>
-            </View>
-
-            <View>
-
-              <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 22 }}>
-                <View style={{ flexDirection: 'column', justifyContent: 'center' }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginRight: 15 }}>
-                    <Image
-                      style={{ height: 20, width: 20, marginRight: 8 }}
-                      source={require('./app/images/books/book-white.png')}
-                    />
-                    <Text style={{ lineHeight: 20, fontSize: 12, color: '#FFF' }}>{this.props.root.state.books_percents[this.props.stack.route.params.book_id]}%</Text>
-                  </View>
-                </View>
-
-                <View style={{ height: 60, width: 60, borderRadius: 18, backgroundColor: '#FFF', flexDirection: 'row', overflow: 'hidden', marginRight: 15 }}>
-                  {this.props.root.state.has_internet == true || this.state.have_file == true ? (
-                    <TouchableOpacity onPress={() => this.openBook(this.state.book.id)}>
-                      <Image
-                        style={{ height: 20, width: 20, margin: 20 }}
-                        source={require('./app/images/books/arrow-button-read.png')}
-                      />
-                    </TouchableOpacity>
-                  ) : (
-                    <Image
-                      style={{ height: 30, width: 30, margin: 15, opacity: 0.5 }}
-                      source={require('./app/images/books/no-connect.png')}
-                    />
-                  )}
-                </View>
-
-                {(this.props.root.state.has_subscription) && this.state.have_file == false &&
-                  <View style={{ marginRight: 15 }}>
-                    {this.props.root.state.has_subscription == true ? (
-                      <React.Fragment>
-                        {this.props.root.state.has_internet == true &&
-                          <ButtonRead
-                            set_have_file={() => this.set_have_file()}
-                            book_id={this.state.book.id} color={this.state.book.color}
-                            book_name={this.state.book.name}
-                            book_name_en={this.state.book.name_en}
-                            navigation={this.props.stack.navigation}
-                          />
-                        }
-                      </React.Fragment>
-                    ) : (
-                      <View style={{ opacity: 0.3, height: 60, width: 60, borderRadius: 18, backgroundColor: '#FFF', flexDirection: 'row', overflow: 'hidden' }}>
-                        <Image
-                          style={{ height: 30, width: 30, margin: 15 }}
-                          source={require('./app/images/books/download.png')}
-                        />
-                      </View>
-                    )}
-                  </View>
-                }
-              </View>
-
-
-            </View>
-
-            {this.state.have_file == false && this.props.root.state.has_internet == true &&
-              <View style={{ padding: 15 }}>
-                <Text style={{ color: '#FFF', textAlign: 'center' }}>
-                  Вы можете скачать книгу,{"\n"} чтобы читать ее без интернета
-                </Text>
-
-                {this.props.root.state.has_subscription == false &&
-                  <Text style={{ marginTop: 15, color: '#FFF', textAlign: 'center' }}>
-                    Функция скачивания доступна{"\n"} только при наличии подписки
-                  </Text>
-                }
-              </View>
-            }
-
-            {this.state.have_file == true &&
-              <View style={{ padding: 15 }}>
-                <Text style={{ color: '#FFF', textAlign: 'center' }}>Книга скачана.</Text>
-                <Text style={{ color: '#FFF', textAlign: 'center' }}>Вы можете читать ее без интернета</Text>
-              </View>
-            }
-          </View>
-        }
-      </SafeAreaView>
-    );
-
-  }
-};
-
-
 const TargetVersion = observer(class TargetVersion extends React.Component {
   constructor(props) {
     super(props);
@@ -5232,606 +5134,359 @@ class TabStack extends React.Component {
     );
   }
 }
-class Book extends React.Component {
+
+class ButtonRead extends React.Component {
+
+  _isMounted = false;
+
   constructor(props) {
+
     super(props);
+
+    this.state = {
+      have_file: false,
+      show_load_status: false,
+      progress: 2,
+      progress_text: '0',
+      have_internet: true,
+      button_loader: true,
+    }
+  }
+
+  async componentDidMount() {
+
+    this._isMounted = true;
+    
+    var have_file = await AsyncStorage.getItem('have_file_' + this.props.book_id);
+
+    this.setState({
+      have_file: have_file == 'true',
+      button_loader: false,
+    });
+
+    this._unsubNet = NetInfo.addEventListener(state => {
+      this.setState({
+        have_internet: state.isConnected,
+      });
+    });
+
+
+  }
+
+  async loadFiles(ar_files, index, count, book_id) {
+
+    if (this._isMounted == true) {
+      var path = ar_files[index]; 
+
+      var response = await axios.get("https://reedle.ru" + path, { params: {} });
+
+      var response = await new Request(path, {}).get();
+      var file_data = JSON.stringify(response);
+
+      path = path.replace('/result', '');
+      
+      await RNFS.writeFile(file_root + path, file_data, 'utf8');
+      
+      index++;
+
+      var progress = (index / count) * 100;
+      if (progress < 2) {
+        progress = 2;
+      }
+
+      
+
+      await this.setState({
+        progress: progress,
+        progress_text: progress.toFixed(0),
+      });
+
+      if (index < count) {
+        this.loadFiles(ar_files, index, count, book_id);
+      } else {
+
+        YandexMetrica.sendEvent('loader',{status: 'finish'});
+        YandexMetrica.sendEvent('loader',{progress: 100});
+
+        await this.setState({
+          progress: 100,
+          have_file: true,
+          show_load_status: false,
+        });
+
+        await AsyncStorage.setItem('have_file_' + book_id, 'true');
+
+        this.openBook(book_id);
+
+      }
+    }
+  }
+
+  componentWillUnmount() {
+    this._isMounted = false;
+    if (this._unsubNet) {
+      this._unsubNet();
+    }
+  }
+
+  async openBook(book_id) {
+    if (this.state.have_file == false) {
+      YandexMetrica.sendEvent('loader',{status: 'start'});
+
+      await this.setState({
+        show_load_status: true,
+      });
+      var response = await new Request('/api/v1/books/download_list', { book_id: book_id }).get();
+     
+      await RNFS.mkdir(file_root + '/books/' + book_id + '/paragraphs/');
+
+      this.setState({
+        progress: 2,
+      });
+
+      this.loadFiles(response, 0, response.length, book_id);
+    } else {
+      this.props.set_have_file();
+      // this.props.navigation.navigate('Reader', {
+      //   book_id: book_id
+      // });
+    }
   }
 
   render() {
-    var book = this.props.book.item;
-    var percent = this.props.books_percents[book.id];
- 
-    return (
-      <View style={{ flex: 1, backgroundColor: '#FFF', borderRadius: 10, margin: 5 }}>
-        <TouchableOpacity onPress={() => this.props.onPress(book.id, book.color)}
-          style={{ marginLeft: 10, marginRight: 10, paddingBottom: 15, paddingTop: 15, flexDirection: 'row' }}>
 
-          <View style={{ height: 100, width: 70, marginRight: 10, borderRadius: 10, overflow: 'hidden', backgroundColor: book.color }}>
-            <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'center' }}>
-              {book.name_en.split(' ').slice(0, 3).map((word, index) =>
-                <Text key={index} numberOfLines={1} style={{ fontFamily: 'LibreBaskerville-Regular', color: '#FFF', fontSize: 12, paddingLeft: 5, paddingRight: 5, textAlign: 'center' }}>{word}</Text>
-              )}
-            </View>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, color: '#666', }}>{book.author}</Text>
-            <Text style={{ fontSize: 14, marginTop: 5, }}>{book.name}</Text>
-            <View style={{ flexDirection: 'row', marginTop: 10 }}>
-              <View style={{ height: 15, width: 5, borderRadius: 5, marginRight: 5, overflow: 'hidden' }}>
-                {(book.level > 0) ? (
-                  <View style={{ backgroundColor: book.level_color, flex: 1 }}></View>
-                ) : (
-                  <View style={{ backgroundColor: '#ddd', flex: 1 }}></View>
-                )}
+    return <View style={{ height: 60, width: 60, borderRadius: 18, backgroundColor: '#FFF', flexDirection: 'row', overflow: 'hidden' }}>
+      <React.Fragment>
+        {this.state.button_loader == true &&
+          <ActivityIndicator style={{ flex: 1 }} size="small" color="#aaa" />
+        }
+        {this.state.button_loader == false &&
+          <React.Fragment>
+            {this.state.show_load_status == true &&
+              <View style={{
+                position: 'absolute',
+                left: -15,
+                top: -15,
+              }}>
+                <AnimatedCircularProgress
+                  size={90}
+                  width={20}
+                  fill={this.state.progress}
+                  tintColor={this.props.color}
+                  backgroundColor="#FFF"
+                  rotation={0}
+                  duration={0}>
+                  {
+                    (fill) => (
+                      <React.Fragment>
+                        {this.state.progress_text == '0' &&
+                          <ActivityIndicator style={{ flex: 1 }} size="small" color="#aaa" />
+                        }
+                        {this.state.progress_text != '0' &&
+                          <Text style={{ color: this.props.color, textAlign: 'center', lineHeight: 40, fontSize: 14 }}>{this.state.progress_text}%</Text>
+                        }
+                      </React.Fragment>
+                    )
+                  }
+                </AnimatedCircularProgress>
+                {this.state.progress_text != '0' &&
+                  <Text style={{ color: this.props.color, textAlign: 'center', lineHeight: 40, fontSize: 14 }}>{this.state.progress_text}%</Text>
+                }
               </View>
-              <View style={{ height: 15, width: 5, borderRadius: 5, marginRight: 5, overflow: 'hidden' }}>
-                {(book.level > 1) ? (
-                  <View style={{ backgroundColor: book.level_color, flex: 1 }}></View>
-                ) : (
-                  <View style={{ backgroundColor: '#ddd', flex: 1 }}></View>
-                )}
-              </View>
-              <View style={{ height: 15, width: 5, borderRadius: 5, marginRight: 5, overflow: 'hidden' }}>
-                {(book.level > 2) ? (
-                  <View style={{ backgroundColor: book.level_color, flex: 1 }}></View>
-                ) : (
-                  <View style={{ backgroundColor: '#ddd', flex: 1 }}></View>
-                )}
-              </View>
-              <View style={{ height: 15, width: 5, borderRadius: 5, marginRight: 5, overflow: 'hidden' }}>
-                {(book.level > 3) ? (
-                  <View style={{ backgroundColor: book.level_color, flex: 1 }}></View>
-                ) : (
-                  <View style={{ backgroundColor: '#ddd', flex: 1 }}></View>
-                )}
-              </View>
-              <View style={{ height: 15, width: 5, borderRadius: 5, marginRight: 5, overflow: 'hidden' }}>
-                {(book.level > 4) ? (
-                  <View style={{ backgroundColor: book.level_color, flex: 1 }}></View>
-                ) : (
-                  <View style={{ backgroundColor: '#ddd', flex: 1 }}></View>
-                )}
-              </View>
-              <Text style={{ marginLeft: 5 }}>
-                <Text style={{ fontSize: 14, lineHeight: 15 }}>{book.complexity_text}</Text>
-              </Text>
-            </View>
-            <View style={{ marginTop: 10, flexDirection: 'row' }}>
-              {percent == 100 &&
-                <Image
-                  style={{ height: 20, width: 20, marginRight: 8 }}
-                  source={require('./app/images/books/book_read.png')}
-                />
-              }
-              {percent != 100 &&
-                <Image
-                  style={{ height: 20, width: 20, marginRight: 8 }}
-                  source={require('./app/images/books/book.png')}
-                />
-              }
-              <Text style={{ lineHeight: 20, fontSize: 12 }}>
-                <Text style={percent == 100 && { color: '#0fa90f' }}>
-                  {percent}%
-                </Text>
-              </Text>
-
-              <Text style={{ lineHeight: 20, fontSize: 12, marginLeft: 10, color: "#444" }}>{book.pages} стр.</Text>
+            }
 
 
-              {book.have_file == true &&
-                <Image
-                  style={{ height: 20, width: 20, marginLeft: 8 }}
-                  source={require('./app/images/books/downloaded.png')}
-                />
-              }
-            </View>
-          </View>
+            {this.state.show_load_status == false &&
+              <React.Fragment>
 
-        </TouchableOpacity>
-      </View>
-    )
+                {this.state.have_file == false &&
+                  <React.Fragment>
+                    {this.state.have_internet == false &&
+                      <Image
+                        style={{ height: 30, width: 30, margin: 15, opacity: 0.5 }}
+                        source={require('./app/images/books/no-connect.png')}
+                      />
+                    }
+                    {this.state.have_internet == true &&
+                      <TouchableOpacity onPress={() => this.openBook(this.props.book_id)}>
+                        <Image
+                          style={{ height: 30, width: 30, margin: 15 }}
+                          source={require('./app/images/books/download.png')}
+                        />
+                      </TouchableOpacity>
+                    }
+                  </React.Fragment>
+                }
+                {this.state.have_file == true &&
+                  <TouchableOpacity onPress={() => this.openBook(this.props.book_id)}>
+                    <Image
+                      style={{ height: 20, width: 20, margin: 20 }}
+                      source={require('./app/images/books/arrow-button-read.png')}
+                    />
+                  </TouchableOpacity>
+                }
+              </React.Fragment>
+            }
+          </React.Fragment>
+        }
+      </React.Fragment>
+    </View>
   }
 }
-class Home extends React.Component {
+class Show extends React.Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      do_not_find: false,
-      level: 'all',
-      books: [],
-      books_filtered: [],
-      books_loader: true,
-      not_show_read: true,
-      sort_new_book: true,
-      show_only_loaded: false,
-      open_property: false,
+      percent: 0,
+      book: false,
+      have_file: false
     };
-
-    this.search_value = "";
   }
 
   async componentDidMount() {
-    var not_show_read = await new Storage().get('not_show_read', 'false')
-    await this.setState({ not_show_read: not_show_read === 'true' });
-
-    var sort_new_book = await new Storage().get('sort_new_book', 'false');
-    await this.setState({ sort_new_book: sort_new_book === 'true' });
-
-    var show_only_loaded = await new Storage().get('show_only_loaded', 'false');
-    await this.setState({ show_only_loaded: show_only_loaded === 'true' });
-
-    this.getBooks();
-
-    // this.props.stack.navigation.navigate('Reader', {
-    //   book_id: 1
-    // });
-  }
-
-  async getBooks() {
-    await this.setState({
-      books: [],
-      filter_books: [],
-    });
-
-    var exists = await RNFS.exists(file_root + '/' + BOOKS_FILENAME);
-    if (exists == false) {
-      await RNFS.writeFile(file_root + '/' + BOOKS_FILENAME, "[]", 'utf8');
-    }
+    homeStore.setOpenProperty(false);
 
     var books = await RNFS.readFile(file_root + '/' + BOOKS_FILENAME, 'utf8');
     books = JSON.parse(books);
 
-    await this.setState({
-      books: books,
-    });
-
-    var server_books = await new Request('/api/v1/books', {}, { do_not_show_error: true }).get();
-    if (server_books == false) {
-      this.filter_books();
-    } else {
-      if (server_books.length != books.length) {
-        books = server_books;
-        await RNFS.writeFile(file_root + '/' + BOOKS_FILENAME, JSON.stringify(server_books), 'utf8');
-
-        await this.setState({
-          books: books,
-        });
-        this.filter_books();
-      } else {
-        this.filter_books();
-      }
-    }
-  }
-
-  //Фильтрует по Level, Названиям, Скачиванию
-  async filter_books() {
-    await this.setState({
-      books_filtered: false,
-    });
-
-    var result = [];
-
-    for (const i in this.state.books) {
-      var book = this.state.books[i];
-
-      if (this.state.level == 'all' || this.state.level == book.level) {
-
-        var check = false;
-
-        //Названия
-        if (this.search_value.length == 0) {
-          check = true;
-        } else {
-          var search_array = this.search_value.split(' ').map(name => name.toLowerCase());
-          search_array = search_array.filter(word => word.length > 0);
-
-          book.name.split(' ').forEach(function (subname) {
-            subname = subname.toLowerCase();
-            search_array.forEach(function (subsearch) {
-              if (subname.includes(subsearch)) {
-                check = true;
-              }
-            });
-          });
-
-          book.author.split(' ').forEach(function (subname) {
-            subname = subname.toLowerCase();
-            search_array.forEach(function (subsearch) {
-              if (subname.includes(subsearch)) {
-                check = true;
-              }
-            });
-          });
-
-          book.name_en.split(' ').forEach(function (subname) {
-            subname = subname.toLowerCase();
-            search_array.forEach(function (subsearch) {
-              if (subname.includes(subsearch)) {
-                check = true;
-              }
-            });
-          });
-        }
-
-        //Скачана книга
-        if (check == true) {
+    await Promise.all(
+      books.map(async (book) => {
+        if (book.id == this.props.stack.route.params.book_id) {
           var have_file = await new Storage().get('have_file_' + book.id, 'false');
-          book['have_file'] = have_file == 'true';
-          if (this.state.show_only_loaded == true) {
-            check = book['have_file'];
-          }
 
-          var percent = await new Storage().get('percent_' + book.id, 0);
-          book['percent'] = percent;
-
-          if (percent == 100) {
-            if (this.state.not_show_read == true) {
-              check = false;
-            }
-          }
+          YandexMetrica.sendEvent('openDetail', {
+            book_name: book.name
+          });
+          
+          this.setState({
+            book: book,
+            have_file: have_file == 'true'
+          });
         }
+      })
+    )
+  }
 
-
-        if (check == true) {
-          result.push(book);
-        }
-      }
-    }
-
-    percents = {}
-    result.forEach(function (book) {
-      percents[book.id] = book.percent;
+  openBook(book_id) {
+    this.props.stack.navigation.navigate('Reader', {
+      book_id: book_id
     });
+  }
 
-    await this.props.root.setState({
-      books_percents: percents
-    });
-
+  set_have_file() {
     this.setState({
-      books_filtered: result,
-      do_not_find: result.length == 0,
-    }, function () {
-      this.showReview();
-    });
-  }
-
-  async showReview() {
-
-    var review_showed = await new Storage().get('review_showed', 'false');
-
-    if (review_showed == 'false') {
-      var time_show_review = await new Storage().get('time_show_review');
-
-      if (time_show_review == undefined) {
-        time_show_review = moment();
-        await new Storage().set('time_show_review', moment().format());
-      } else {
-        time_show_review = moment(time_show_review);
-      }
-
-      var now_time = moment();
-
-      var range_time = (now_time - time_show_review) / 1000 / 60;
-
-      if (range_time > 7200) { //7200
-        YandexMetrica.sendEvent('reviewShow', { show: true });
-        await new Storage().set('review_showed', 'true');
-        StoreReview.requestReview();
-      }
-    }
-  }
-
-  goToSite() {
-    Linking.openURL("https://reedle.ru");
-  }
-
-  onChangeText(value) {
-    this.search_value = value;
-    this.filter_books();
-  }
-
-  setLevel(level) {
-
-    YandexMetrica.sendEvent('setLevel', { level: level });
-
-    this.setState({
-      level: level,
-    }, function () {
-      this.filter_books();
-    });
-  }
-  openProperty() {
-
-    YandexMetrica.sendEvent('openProperty', { show: !this.state.open_property });
-
-    this.setState({
-      open_property: !this.state.open_property,
-    });
-  }
-
-  setPropertyShowRead() {
-
-    YandexMetrica.sendEvent('notShowRead', { value: !this.state.not_show_read });
-
-    AsyncStorage.setItem('not_show_read', (!this.state.not_show_read).toString()).then(() => {
-      this.setState({
-        not_show_read: !this.state.not_show_read,
-      }, () => {
-        this.filter_books();
-      });
-    });
-
-
-  }
-  setPropertySortNewBook() {
-
-    YandexMetrica.sendEvent('sortNewBook', { value: !this.state.sort_new_book });
-
-    AsyncStorage.setItem('sort_new_book', (!this.state.sort_new_book).toString()).then(() => {
-      this.setState({
-        sort_new_book: !this.state.sort_new_book,
-      }, () => {
-        this.filter_books();
-      });
-    });
-  }
-
-  setPropertyShowOnlyLoaded() {
-
-    YandexMetrica.sendEvent('showOnlyLoaded', { value: !this.state.show_only_loaded });
-
-    AsyncStorage.setItem('show_only_loaded', (!this.state.show_only_loaded).toString()).then(() => {
-      this.setState({
-        show_only_loaded: !this.state.show_only_loaded,
-      }, () => {
-        this.filter_books();
-      });
+      have_file: true
     });
   }
 
   render() {
 
-    const readBook = (rowMap, rowKey) => {
-      if (rowMap[rowKey.id]) {
-        rowMap[rowKey.id].closeRow();
-      }
-      AsyncStorage.setItem('percent_' + rowKey.id, '100').then(() => {
-        this.filter_books();
-      });
-    };
-
-    const deleteBook = (rowMap, rowKey) => {
-      if (rowMap[rowKey.id]) {
-        rowMap[rowKey.id].closeRow();
-      }
-      AsyncStorage.setItem('have_file_' + rowKey.id, '').then(() => {
-        RNFS.unlink(file_root + '/books/' + rowKey.id + '/').then(() => {
-          this.filter_books();
-        });
-      });
-    };
-
     return (
-      <SafeAreaView style={applicationStyles.save_area_view}>
-        <View style={homeStyles.header}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: this.props.stack.route.params.color }}>
+        <TargetVersion />
+        <StatusBar barStyle="light-content" />
 
-          <View style={homeStyles.header_empty_block} />
+        {this.state.book == false &&
+          <ActivityIndicator style={{ flex: 1 }} size="large" color="#aaa" />
+        }
 
-          <View style={homeStyles.logo}>
-            <Text style={homeStyles.logo_text}>Reedle</Text>
-            <Text style={homeStyles.logo_dot}>.</Text>
-          </View>
+        {this.state.book != false &&
+          <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'space-evenly' }}>
 
-          {(this.props.root.state.has_subscription == false) ? (
-            <TouchableOpacity onPress={() => this.props.tabs.navigation.navigate('Subscription')}>
-              <Image style={{ width: 30, height: 30, marginTop: 2.5 }} source={require('./app/images/header/ads.jpg')} />
-            </TouchableOpacity>
-          ) : (
-            <View style={homeStyles.header_empty_block}></View>
-          )}
-        </View>
-
-        <View style={homeStyles.search}>
-          <Image
-            style={homeStyles.search_image}
-            resizeMode={'contain'}
-            source={require('./app/images/home/search.png')}
-          />
-          <TextInput
-            style={homeStyles.search_input}
-            onChangeText={(value) => this.onChangeText(value)}
-            placeholder={"Поиск"}
-            clearButtonMode="always"
-          />
-        </View>
-
-        <View style={homeStyles.level_selector}>
-          <View style={homeStyles.level_selector_wrap}>
-            <LevelSelectorPoint onPress={(level) => this.setLevel(level)} name="Все" color="#aaa" level="all" current_level={this.state.level} />
-            <LevelSelectorPoint onPress={(level) => this.setLevel(level)} name="A1" color="#89c053" level="1" current_level={this.state.level} />
-            <LevelSelectorPoint onPress={(level) => this.setLevel(level)} name="A2" color="#5e9cea" level="2" current_level={this.state.level} />
-            <LevelSelectorPoint onPress={(level) => this.setLevel(level)} name="B1" color="#f5b945" level="3" current_level={this.state.level} />
-            <LevelSelectorPoint onPress={(level) => this.setLevel(level)} name="B2" color="#fb836f" level="4" current_level={this.state.level} />
-            <LevelSelectorPoint onPress={(level) => this.setLevel(level)} name="C1" color="#fe4444" level="5" current_level={this.state.level} />
-
-
-            <TouchableOpacity onPress={() => this.openProperty()}>
-              <View style={{ backgroundColor: '#ddd', borderRadius: 7, marginLeft: 3 }}>
-                {this.state.open_property == false &&
-                  <Image
-                    style={homeStyles.settings_image}
-                    source={require('./app/images/home/settings.png')}
-                  />
-                }
-                {this.state.open_property == true &&
-                  <Image
-                    style={homeStyles.settings_image}
-                    source={require('./app/images/home/settings-close.png')}
-                  />
-                }
-              </View>
-            </TouchableOpacity>
-          </View>
-          {this.state.open_property == true &&
-            <View style={homeStyles.properties}>
-              <View style={homeStyles.properties_point}>
-
-                <Text style={homeStyles.properties_point_text}>Не показывать прочитанные книги</Text>
-
-                <Switch
-                  trackColor={{ false: "#eee", true: "#407cfd" }}
-                  thumbColor={'#FFF'}
-                  onValueChange={() => this.setPropertyShowRead()}
-                  value={this.state.not_show_read}
-                />
-
-              </View>
-
-
-              <View style={homeStyles.properties_point}>
-
-                <Text style={homeStyles.properties_point_text}>Ставить вперед открытые книги</Text>
-
-                <Switch
-                  trackColor={{ false: "#eee", true: "#407cfd" }}
-                  thumbColor={'#FFF'}
-                  onValueChange={() => this.setPropertySortNewBook()}
-                  value={this.state.sort_new_book}
-                />
-
-              </View>
-
-              <View style={[homeStyles.properties_point, { marginBottom: 0 }]}>
-
-                <Text style={homeStyles.properties_point_text}>Показать только скачанные</Text>
-
-                <Switch
-                  trackColor={{ false: "#eee", true: "#407cfd" }}
-                  thumbColor={'#FFF'}
-                  onValueChange={() => this.setPropertyShowOnlyLoaded()}
-                  value={this.state.show_only_loaded}
-                />
-
-              </View>
-
+            <View>
+              <Text style={{ marginBottom: 30, color: '#FFF', fontSize: 18, paddingLeft: 30, paddingRight: 30, textAlign: 'center' }}>{this.state.book.author}</Text>
+              <Text style={{ fontFamily: 'LibreBaskerville-Regular', color: '#FFF', fontSize: 45, paddingLeft: 30, paddingRight: 30, textAlign: 'center' }}>{this.state.book.name_en}</Text>
+              <Text style={{ marginTop: 30, color: '#FFF', fontSize: 18, paddingLeft: 30, paddingRight: 30, textAlign: 'center' }}>{this.state.book.name}</Text>
             </View>
-          }
 
-        </View>
+            <View>
 
-        <React.Fragment>
-          {this.state.do_not_find == true &&
-            <View style={{ marginTop: 100 }}>
-              <Text style={{ textAlign: 'center', fontSize: 20, color: '#aaa' }}>Книги не найдены :(</Text>
-            </View>
-          }
-          {this.state.do_not_find == false &&
-            <SwipeListView
-              style={{ flex: 1, marginTop: -10, zIndex: 0, paddingTop: 10 }}
-              refreshControl={
-                <RefreshControl refreshing={false} onRefresh={() => this.getBooks()} />
-              }
-              showsHorizontalScrollIndicator={false}
-              scrollIndicatorInsets={{ right: 1 }}
-              removeClippedSubviews={true}
-              contentContainerStyle={{ paddingBottom: 100 }}
-              data={this.state.books_filtered}
-              renderItem={(book) => <Book
-                books_percents={this.props.root.state.books_percents}
-                book={book}
-                onPress={(book_id, color) => this.props.stack.navigation.navigate('Show', {
-                  book_id: book_id,
-                  color: color,
-                })}
-              />}
-              keyExtractor={(book) => book.id}
-              ListEmptyComponent={() => <PreviewBooks />}
-              rightOpenValue={-130}
-              disableRightSwipe={true}
-
-              renderHiddenItem={(data, rowMap) => {
-
-                return (
-                  <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', borderBottomWidth: 1, borderBottomColor: '#ddd', marginLeft: 15, marginRight: 15, }}>
-                    <View style={{ zIndex: 2, marginTop: 5, borderTopRightRadius: 10, borderBottomRightRadius: 10, height: 130, width: 65, backgroundColor: '#FFF' }}>
-                    </View>
-                    <TouchableWithoutFeedback onPress={() => readBook(rowMap, data.item)} >
-                      <View style={{ zIndex: 1, marginLeft: -10, marginTop: 5, borderTopRightRadius: 10, borderBottomRightRadius: 10, height: 130, width: 65, backgroundColor: '#75b641' }}>
-                        <Text numberOfLines={1} style={{ width: 130, position: 'absolute', bottom: 37, left: -27, color: '#FFF', lineHeight: 55, textAlign: 'center', fontSize: 16, transform: [{ rotate: '-90deg' }] }}>Прочитана</Text>
-                      </View>
-                    </TouchableWithoutFeedback>
-                    {data.item.have_file == true &&
-                      <TouchableWithoutFeedback onPress={() => deleteBook(rowMap, data.item)}>
-                        <View style={{ zIndex: 0, marginLeft: -10, marginTop: 5, borderTopRightRadius: 10, borderBottomRightRadius: 10, height: 130, width: 65, backgroundColor: '#f05458' }}>
-                          <Text numberOfLines={1} style={{ width: 130, position: 'absolute', bottom: 37, left: -27, color: '#FFF', lineHeight: 55, textAlign: 'center', fontSize: 12, transform: [{ rotate: '-90deg' }] }}>Удалить из памяти</Text>
-                        </View>
-                      </TouchableWithoutFeedback>
-                    }
+              <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 22 }}>
+                <View style={{ flexDirection: 'column', justifyContent: 'center' }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginRight: 15 }}>
+                    <Image
+                      style={{ height: 20, width: 20, marginRight: 8 }}
+                      source={require('./app/images/books/book-white.png')}
+                    />
+                    <Text style={{ lineHeight: 20, fontSize: 12, color: '#FFF' }}>{this.props.root.state.books_percents[this.props.stack.route.params.book_id]}%</Text>
                   </View>
-                )
-              }}
+                </View>
 
-            />
-          }
-        </React.Fragment>
+                <View style={{ height: 60, width: 60, borderRadius: 18, backgroundColor: '#FFF', flexDirection: 'row', overflow: 'hidden', marginRight: 15 }}>
+                  {this.props.root.state.has_internet == true || this.state.have_file == true ? (
+                    <TouchableOpacity onPress={() => this.openBook(this.state.book.id)}>
+                      <Image
+                        style={{ height: 20, width: 20, margin: 20 }}
+                        source={require('./app/images/books/arrow-button-read.png')}
+                      />
+                    </TouchableOpacity>
+                  ) : (
+                    <Image
+                      style={{ height: 30, width: 30, margin: 15, opacity: 0.5 }}
+                      source={require('./app/images/books/no-connect.png')}
+                    />
+                  )}
+                </View>
 
+                {(this.props.root.state.has_subscription) && this.state.have_file == false &&
+                  <View style={{ marginRight: 15 }}>
+                    {this.props.root.state.has_subscription == true ? (
+                      <React.Fragment>
+                        {this.props.root.state.has_internet == true &&
+                          <ButtonRead
+                            set_have_file={() => this.set_have_file()}
+                            book_id={this.state.book.id} color={this.state.book.color}
+                            book_name={this.state.book.name}
+                            book_name_en={this.state.book.name_en}
+                            navigation={this.props.stack.navigation}
+                          />
+                        }
+                      </React.Fragment>
+                    ) : (
+                      <View style={{ opacity: 0.3, height: 60, width: 60, borderRadius: 18, backgroundColor: '#FFF', flexDirection: 'row', overflow: 'hidden' }}>
+                        <Image
+                          style={{ height: 30, width: 30, margin: 15 }}
+                          source={require('./app/images/books/download.png')}
+                        />
+                      </View>
+                    )}
+                  </View>
+                }
+              </View>
+
+
+            </View>
+
+            {this.state.have_file == false && this.props.root.state.has_internet == true &&
+              <View style={{ padding: 15 }}>
+                <Text style={{ color: '#FFF', textAlign: 'center' }}>
+                  Вы можете скачать книгу,{"\n"} чтобы читать ее без интернета
+                </Text>
+
+                {this.props.root.state.has_subscription == false &&
+                  <Text style={{ marginTop: 15, color: '#FFF', textAlign: 'center' }}>
+                    Функция скачивания доступна{"\n"} только при наличии подписки
+                  </Text>
+                }
+              </View>
+            }
+
+            {this.state.have_file == true &&
+              <View style={{ padding: 15 }}>
+                <Text style={{ color: '#FFF', textAlign: 'center' }}>Книга скачана.</Text>
+                <Text style={{ color: '#FFF', textAlign: 'center' }}>Вы можете читать ее без интернета</Text>
+              </View>
+            }
+          </View>
+        }
       </SafeAreaView>
-    )
+    );
+
   }
-}
+};
 
 
-class LevelSelectorPoint extends React.Component {
-  render() {
-    return (
-      <TouchableOpacity onPress={() => this.props.onPress(this.props.level)} style={homeStyles.level_selector_point}>
-        <View style={this.props.current_level == this.props.level && [{ backgroundColor: this.props.color }, homeStyles.level_selector_point_active]}>
-          <Text style={homeStyles.level_selector_point_text}>
-            <Text style={this.props.current_level == this.props.level ? { color: '#FFF' } : { color: '#000' }}>
-              {this.props.name}
-            </Text>
-          </Text>
-        </View>
-      </TouchableOpacity>
-    )
-  }
-}
-
-
-function PreviewBooks() {
-  return (
-    <React.Fragment>
-      <PreviewBook />
-      <PreviewBook />
-      <PreviewBook />
-      <PreviewBook />
-      <PreviewBook />
-      <PreviewBook />
-      <PreviewBook />
-      <PreviewBook />
-      <PreviewBook />
-      <PreviewBook />
-    </React.Fragment>
-  );
-}
-
-function PreviewBook() {
-  return (
-    <React.Fragment>
-      <View style={{ marginLeft: 15, marginRight: 15, paddingBottom: 15, paddingTop: 15, flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#ddd' }}>
-        <View style={{ height: 100, width: 70, marginRight: 10, borderRadius: 10, overflow: 'hidden', backgroundColor: '#eee' }}>
-          <ActivityIndicator style={{ flex: 1 }} size="small" color="#aaa" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <View style={{ borderRadius: 5, height: 25, backgroundColor: '#eee', width: '50%' }}></View>
-          <View style={{ borderRadius: 5, marginTop: 12.5, height: 25, backgroundColor: '#eee' }}></View>
-          <View style={{ borderRadius: 5, marginTop: 12.5, height: 25, backgroundColor: '#eee', width: '70%' }}></View>
-        </View>
-      </View>
-    </React.Fragment>
-  );
-}
 const Subscription = observer(class Subscription extends React.Component {
   constructor() {
     super();
@@ -5938,12 +5593,12 @@ const Subscription = observer(class Subscription extends React.Component {
         }
 
         if (type == 'subscription') {
-          var purchase = await RNIap.requestSubscription({ skus: [productId] });
+          var purchase = await RNIap.requestSubscription({ sku: productId });
           var time_subsription = moment.unix(parseInt(purchase.transactionDate) / 1000);
         }
 
         if (type == 'product') {
-          var purchase = await RNIap.requestPurchase({ skus: [productId] });
+          var purchase = await RNIap.requestPurchase({ sku: productId });
           var time_subsription = moment.unix(parseInt(purchase.transactionDate) / 1000);
         }
 
@@ -6448,6 +6103,351 @@ const Subscription = observer(class Subscription extends React.Component {
   }
 });
 
+class Bookmark extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      have_file: true,
+    }
+    this.bookmark = this.props.bookmark.item;
+  }
+
+  async componentDidMount() {
+    var have_file = await new Storage().get('have_file_' + this.bookmark.book_id);
+    this.setState({
+      have_file: have_file == 'true',
+    });
+  }
+
+  render() {
+    return (
+      <View style={{ marginLeft: 10, marginRight: 10, marginBottom: 10, backgroundColor: app_theme_colors.backgroundLight, paddingLeft: 10, paddingRight: 10, borderRadius: 5 }}>
+        <TouchableOpacity onPress={() => this.props.openBook(this.bookmark.book_id, { page: this.bookmark.page, paragraph: this.bookmark.paragraph })} style={{ flexDirection: 'row' }}>
+          <Text numberOfLines={1} ellipsizeMode='tail' style={{ flex: 1, lineHeight: 40 }}>{this.bookmark.book_name}</Text>
+          <Text style={{ width: 100, textAlign: 'right', lineHeight: 40, fontWeight: 'bold' }}>Стр. {this.bookmark.page}</Text>
+        </TouchableOpacity>
+      </View>
+    )
+  }
+}
+class BookmarkStack extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
+    const RootStack = createStackNavigator();
+
+    return (
+      <RootStack.Navigator initialRouteName="Bookmark">
+        <RootStack.Screen name="Bookmark" options={() => ({ headerShown: false })}>
+          {(stack) => (
+            <Bookmarks root={this.props.root} stack={stack} root_stack={this.props.stack} />
+          )}
+        </RootStack.Screen>
+      </RootStack.Navigator>
+    );
+  }
+}
+class Bookmarks extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      auth_modal: false,
+      auth_method: 'login',
+      bookmarks: [],
+      do_not_find: false,
+    };
+
+    this.storage_bookmarks = [];
+    this.search_value = "";
+  }
+
+  async componentDidMount() {
+    //await new Storage().set('bookmarks_keys', JSON.stringify([]));
+    this._unsubFocus = this.props.stack.navigation.addListener('focus', () => {
+      this.getBookmarks();
+    });
+
+    await this.getBookmarks();
+  }
+
+  componentWillUnmount() {
+    if (this._unsubFocus) {
+      this._unsubFocus();
+    }
+  }
+
+  async getBookmarks() {
+    if (this.props.root.state.current_user != false) {
+      await this.setState({
+        do_not_find: false,
+        bookmarks: [],
+      });
+
+      this.storage_bookmarks = await this.getBookmarksFromStorage();
+      await this.getBookmarksFromServer();
+      var bookmarks = await this.getBookmarksFromStorage();
+
+      this.setState({
+        bookmarks: bookmarks,
+        do_not_find: bookmarks.length == 0
+      });
+    }
+  }
+
+  async getBookmarksFromServer() {
+    var server_bookmarks = await new Request('/api/v1/bookmarks', {
+      user_id: this.props.root.state.current_user.id
+    }, {
+      do_not_show_error: true
+    }).get();
+    if (server_bookmarks != false) {
+
+      var ar_delete_keys = [];
+      var ar_add_keys = [];
+
+      // Удаляем с устройства если на сервере удалили и добавляем на сервере, если есть добавленные на устройстве offline
+      await Promise.all(this.storage_bookmarks.reverse().map(async storage_bookmark => {
+        var has_bookmark = false;
+        server_bookmarks.map(async server_bookmark => {
+          if (server_bookmark.book.id == storage_bookmark.book_id && has_bookmark == false) {
+            has_bookmark = true;
+          }
+        })
+        if (has_bookmark == false) {
+          if (storage_bookmark.offline == true) {
+            await new Request('/api/v1/bookmarks', {
+              book_id: storage_bookmark.book_id,
+              user_id: this.props.root.state.current_user.id,
+              page: storage_bookmark.page,
+              paragraph: storage_bookmark.paragraph
+            }, {
+              do_not_show_error: true
+            }).post();
+            storage_bookmark.offline = false;
+            await new Storage().set('bookmark_' + storage_bookmark.book_id, JSON.stringify(storage_bookmark));
+          } else {
+            ar_delete_keys.push('bookmark_' + storage_bookmark.book_id);
+          }
+        }
+      }));
+
+      await Promise.all(server_bookmarks.reverse().map(async server_bookmark => {
+        // Добавляем, если на сервере есть новые
+        var has_bookmark = false;
+        this.storage_bookmarks.forEach((storage_bookmark) => {
+          if (server_bookmark.book.id == storage_bookmark.book_id && has_bookmark == false) {
+            has_bookmark = true;
+          }
+        });
+
+        if (has_bookmark == false) {
+          await new Storage().set('bookmark_' + server_bookmark.book.id, JSON.stringify({
+            book_id: server_bookmark.book.id,
+            book_name: server_bookmark.book.name,
+            page: server_bookmark.page,
+            paragraph: server_bookmark.paragraph
+          }));
+          ar_add_keys.push('bookmark_' + server_bookmark.book.id);
+        }
+
+        // Обновляем, если на сервере параграф больше
+        this.storage_bookmarks.forEach((storage_bookmark) => {
+          if (server_bookmark.book.id == storage_bookmark.book_id) {
+            if (server_bookmark.paragraph > storage_bookmark.paragraph) {
+              new Storage().set('bookmark_' + storage_bookmark.book_id, JSON.stringify({
+                book_id: storage_bookmark.book_id,
+                book_name: storage_bookmark.book_name,
+                page: server_bookmark.page,
+                paragraph: server_bookmark.paragraph
+              }));
+              ar_add_keys.push('bookmark_' + server_bookmark.book.id);
+            }
+          }
+        });
+      }));
+
+      bookmarks_keys = await new Storage().get('bookmarks_keys');
+      if (bookmarks_keys == undefined || bookmarks_keys == null) {
+        bookmarks_keys = [];
+      } else {
+        bookmarks_keys = JSON.parse(bookmarks_keys);
+      }
+
+      ar_add_keys.forEach(function (add_key) {
+        var index = bookmarks_keys.indexOf(add_key);
+        if (index > -1) {
+          bookmarks_keys.splice(index, 1);
+        }
+        bookmarks_keys.unshift(add_key);
+      });
+
+      ar_delete_keys.forEach(function (delete_key) {
+        var index = bookmarks_keys.indexOf(delete_key);
+        if (index > -1) {
+          bookmarks_keys.splice(index, 1);
+        }
+      });
+
+      await new Storage().set('bookmarks_keys', JSON.stringify(bookmarks_keys));
+    }
+  }
+
+  async getBookmarksFromStorage() {
+    var bookmarks_keys = await new Storage().get('bookmarks_keys');
+    if (bookmarks_keys == undefined) {
+      bookmarks_keys = []
+    } else {
+      bookmarks_keys = JSON.parse(bookmarks_keys);
+    }
+
+    var bookmarks = await Promise.all(bookmarks_keys.map(async bookmark_key => {
+      var bookmark = await new Storage().get(bookmark_key);
+
+      return JSON.parse(bookmark);
+    }));
+
+    return bookmarks;
+  }
+
+  async deleteBookmark(rowMap, data) {
+    bookmarks_keys = await new Storage().get('bookmarks_keys');
+    bookmarks_keys = JSON.parse(bookmarks_keys);
+
+    var index = bookmarks_keys.indexOf('bookmark_' + data.book_id);
+    if (index > -1) {
+      bookmarks_keys.splice(index, 1);
+    }
+
+    new Storage().set('bookmarks_keys', JSON.stringify(bookmarks_keys));
+
+    await new Request('/api/v1/bookmarks', {
+      book_id: data.book_id,
+      user_id: this.props.root.state.current_user.id
+    }, {
+      desciption_error: 'Закладка удалена только с этого устройства.'
+    }).delete();
+
+    this.getBookmarks();
+  }
+
+  openBook(book_id, bookmark) {
+    // Открываем Reader через корневой стек (над табами), чтобы не было
+    // ни нижней таб-панели, ни заголовка вложенного стека закладок.
+    this.props.root_stack.navigation.navigate('Reader', {
+      book_id: book_id,
+      bookmark: bookmark,
+    });
+  }
+
+  render() {
+    return (
+      <SafeAreaView style={applicationStyles.save_area_view}>
+
+        <Modal
+          animationType="slide"
+          presentationStyle={'overFullScreen'}
+          visible={this.state.auth_modal && this.props.root.state.current_user == false}>
+          <Auth method={this.state.auth_method} modal={true} close={() => this.setState({ auth_modal: false })} />
+        </Modal>
+
+        {this.props.root.state.current_user == false ? (
+          <View style={bookmarksStyles.auth_content}>
+            <Text style={bookmarksStyles.auth_into}>
+              Для того чтобы воспользоваться закладками,
+              необходимо
+            </Text>
+            <Text onPress={() => this.setState({ auth_modal: true, auth_method: 'login' })} style={[bookmarksStyles.auth_into, { color: '#f05458', marginTop: 15 }]}>авторизоваться</Text>
+            <Text style={bookmarksStyles.auth_into}>или</Text>
+            <Text onPress={() => this.setState({ auth_modal: true, auth_method: 'reg' })} style={[bookmarksStyles.auth_into, { color: '#f05458' }]}>зарегистрироваться</Text>
+          </View>
+        ) : (
+
+          <React.Fragment>
+            {this.state.do_not_find == true &&
+              <View style={{ marginTop: 100, flex: 1, padding: 15 }}>
+                <Text style={{ textAlign: 'center', fontSize: 20, color: '#aaa', flexDirection: 'row' }}>
+                  Чтобы создать закладку,
+                  зайдите на книгу и нажмите иконку закладки
+                </Text>
+                <Text style={{ marginTop: 50, fontSize: 14, color: '#aaa', textAlign: 'center' }}>Если вы добавили закладку, но она не отображается, обновите раздел</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 15 }}>
+                  <TouchableOpacity style={{ width: 200, height: 40, backgroundColor: '#ddd', borderRadius: 10 }} onPress={() => this.getBookmarks()}>
+                    <Text style={{ lineHeight: 40, textAlign: 'center' }}>Обновить</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            }
+            {this.state.do_not_find == false &&
+              <SwipeListView
+                style={{ flex: 1, zIndex: 0, paddingTop: 10 }}
+                refreshControl={
+                  <RefreshControl refreshing={false} onRefresh={() => this.getBookmarks()} />
+                }
+                showsHorizontalScrollIndicator={false}
+                scrollIndicatorInsets={{ right: 1 }}
+                removeClippedSubviews={true}
+                contentContainerStyle={{ paddingBottom: 100 }}
+                data={this.state.bookmarks}
+                renderItem={(bookmark) => <Bookmark openBook={(book_id, bookmark) => this.openBook(book_id, bookmark)} bookmark={bookmark} />}
+                keyExtractor={(bookmark) => bookmark.book_id}
+                ListEmptyComponent={() => <PreviewBookmarks />}
+                rightOpenValue={-40}
+                disableRightSwipe={true}
+                renderHiddenItem={(data, rowMap) => {
+
+                  return (
+                    <View style={{ flex: 1, flexDirection: 'row', heihgt: 40, justifyContent: 'flex-end', marginRight: 10, }}>
+                      <TouchableOpacity onPress={() => this.deleteBookmark(rowMap, data.item)}>
+                        <Image style={{ width: 20, height: 20, margin: 10 }} source={require('./app/images/bookmarks/delete.png')} />
+                      </TouchableOpacity>
+                    </View>
+                  )
+                }}
+
+              />
+            }
+          </React.Fragment>
+
+        )}
+      </SafeAreaView>
+
+    )
+  }
+}
+
+
+function PreviewBookmarks() {
+  return (
+    <React.Fragment>
+      <PreviewBookmark />
+      <PreviewBookmark />
+      <PreviewBookmark />
+      <PreviewBookmark />
+      <PreviewBookmark />
+      <PreviewBookmark />
+      <PreviewBookmark />
+      <PreviewBookmark />
+      <PreviewBookmark />
+      <PreviewBookmark />
+    </React.Fragment>
+  );
+}
+
+function PreviewBookmark() {
+  return (
+    <React.Fragment>
+      <View style={{ marginLeft: 15, marginRight: 15, paddingBottom: 15, paddingTop: 15, borderBottomWidth: 1, borderBottomColor: '#ddd' }}>
+        <View style={{ height: 50, marginRight: 10, borderRadius: 10, overflow: 'hidden', backgroundColor: '#eee' }}>
+          <ActivityIndicator style={{ flex: 1 }} size="small" color="#aaa" />
+        </View>
+      </View>
+    </React.Fragment>
+  );
+}
 export default function App() {
   return <RootApp/>;
 }
