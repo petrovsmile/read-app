@@ -57,6 +57,14 @@ target 'read_en' do
           config.build_settings['CLANG_WARN_DEPRECATED_THIS_CAPTURE'] = 'NO'
         end
       end
+
+      # Fix duplicate symbols in YandexMobileAds for read_en target
+      if target.name == 'read_en'
+        target.build_configurations.each do |config|
+          config.build_settings['OTHER_LDFLAGS'] ||= '$(inherited)'
+          config.build_settings['OTHER_LDFLAGS'] += ' -Xlinker -allow_duplicated_symbols'
+        end
+      end
     end
   end
 end

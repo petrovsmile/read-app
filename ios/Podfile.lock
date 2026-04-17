@@ -41,16 +41,8 @@ PODS:
   - fmt (11.0.2)
   - glog (0.3.5)
   - hermes-engine (0.78.3):
-    - hermes-engine/cdp (= 0.78.3)
-    - hermes-engine/Hermes (= 0.78.3)
-    - hermes-engine/inspector (= 0.78.3)
-    - hermes-engine/inspector_chrome (= 0.78.3)
-    - hermes-engine/Public (= 0.78.3)
-  - hermes-engine/cdp (0.78.3)
-  - hermes-engine/Hermes (0.78.3)
-  - hermes-engine/inspector (0.78.3)
-  - hermes-engine/inspector_chrome (0.78.3)
-  - hermes-engine/Public (0.78.3)
+    - hermes-engine/Pre-built (= 0.78.3)
+  - hermes-engine/Pre-built (0.78.3)
   - NitroIap (15.2.0):
     - DoubleConversion
     - glog
@@ -1485,7 +1477,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-yandex-mobile-ads (0.8.0):
+  - react-native-yandex-mobile-ads (0.7.0):
     - React-Core
     - YandexMobileAds (= 5.5.0)
     - YandexMobileAdsInstream (= 0.15.0)
@@ -2368,7 +2360,7 @@ SPEC CHECKSUMS:
   FBLazyVector: e053802577a711add20e45bbbf5dd1180b6ca62e
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: eb93e2f488219332457c3c4eafd2738ddc7e80b8
-  hermes-engine: 53c327c3658dca9fe0ec67e5d946edd23d244976
+  hermes-engine: b5c9cfbe6415f1b0b24759f2942c8f33e9af6347
   NitroIap: a4fa6e4a6c4944f9d5cf4f1160cf60fb8fbd8dd8
   NitroModules: 5b66210b99c71a938e08518124d2f90cc2113881
   openiap: 35b7ebf3b953bc3f24a57fcb5f98fc4dd30f1b04
@@ -2408,7 +2400,7 @@ SPEC CHECKSUMS:
   react-native-slider: 310d3f89edd6ca8344a974bfe83a29a3fbb60e5a
   react-native-tracking-transparency: 15eb319f2b982070eb9831582af27d87badfa624
   react-native-webview: 564ff69d38cdd9ae870feb99743accb6f18fdc2f
-  react-native-yandex-mobile-ads: 5161ca51d51dfba3e8454382376c6058d6127cef
+  react-native-yandex-mobile-ads: 80084708e1572b11b9303229129f81438cc60fe3
   React-NativeModulesApple: c8bb2bc56d39bd122c56ef58a55c3f34d53f1585
   React-perflogger: d06f0fd0727356651a5535f6d717130187aeb667
   React-performancetimeline: 7afc2307ffc4047cef95eb711ea39a12fd90d533
@@ -2452,6 +2444,6 @@ SPEC CHECKSUMS:
   YandexMobileMetrica: f5368ee93f286c793d73b58da00929babfc897c1
   Yoga: eca8dd841b7cd47d82d66be58af8e3aeb819012f
 
-PODFILE CHECKSUM: 20fed829aadc230503b03eec8ed6ee721e0c8c2d
+PODFILE CHECKSUM: c7dd8985323c1a9dff6186d5cf304a541870a681
 
 COCOAPODS: 1.16.2

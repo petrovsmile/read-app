@@ -42,7 +42,7 @@
     "react-native-tracking-transparency": "^0.1.2",
     "react-native-tts": "^4.1.1",
     "react-native-webview": "^13.8.0",
-    "react-native-yandex-mobile-ads": "^0.8.0"
+    "react-native-yandex-mobile-ads": "^0.7.0"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
