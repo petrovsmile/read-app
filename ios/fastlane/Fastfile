@@ -1,0 +1,55 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Build and upload to TestFlight"
+  lane :build_testflight do
+    # Обновляем код подписи для автоматического управления
+    update_code_signing_settings(
+      use_automatic_signing: true,
+      team_id: ENV["FASTLANE_TEAM_ID"],
+      targets: ["read_en"]
+    )
+
+    # Собираем архив
+    build_app(
+      workspace: "read_en.xcworkspace",
+      scheme: "read_en",
+      configuration: "Release",
+      derived_data_path: "build",
+      destination: "generic/platform=iOS",
+      export_method: "app-store",
+      skip_package_ipa: false,
+      skip_package_pkg: true,
+      output_directory: "build",
+      output_name: "read_en.ipa"
+    )
+  end
+
+  desc "Upload to TestFlight"
+  lane :upload_testflight do
+    # Загружаем на TestFlight используя App Store Connect API
+    upload_to_testflight(
+      api_key_path: File.expand_path("~/.appstoreconnect/private_keys/AuthKey_#{ENV["APP_STORE_CONNECT_API_KEY_ID"]}.p8"),
+      app_identifier: "com.your.app.identifier",  # Замените на ваш Bundle ID
+      ipa: "build/read_en.ipa",
+      skip_submission: false,
+      skip_waiting_for_build_processing: false,
+      changelog: "Automated build from GitHub Actions"
+    )
+  end
+
+  desc "Build without upload"
+  lane :build_only do
+    build_app(
+      workspace: "read_en.xcworkspace",
+      scheme: "read_en",
+      configuration: "Release",
+      derived_data_path: "build",
+      destination: "generic/platform=iOS",
+      export_method: "app-store",
+      skip_package_ipa: false,
+      output_directory: "build",
+      output_name: "read_en.ipa"
+    )
+  end
+end
