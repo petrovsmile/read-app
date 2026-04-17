@@ -66,5 +66,15 @@ target 'read_en' do
       config[:reactNativePath],
       :mac_catalyst_enabled => false
     )
+
+    # Fix for RCT-Folly warnings treated as errors on Xcode 16+ with iOS 18
+    installer.pods_project.targets.each do |target|
+      if target.name == 'RCT-Folly'
+        target.build_configurations.each do |config|
+          config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
+          config.build_settings['CLANG_WARN_DEPRECATED_THIS_CAPTURE'] = 'NO'
+        end
+      end
+    end
   end
 end
