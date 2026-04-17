@@ -1,40 +1,5 @@
 PODS:
   - boost (1.84.0)
-  - DivKit (13.0.0):
-    - DivKit_Base (= 13.0.0)
-    - DivKit_BaseTiny (= 13.0.0)
-    - DivKit_BaseUI (= 13.0.0)
-    - DivKit_CommonCore (= 13.0.0)
-    - DivKit_LayoutKit (= 13.0.0)
-    - DivKit_LayoutKitInterface (= 13.0.0)
-    - DivKit_Networking (= 13.0.0)
-    - DivKit_Serialization (= 13.0.0)
-    - DivKit_TemplatesSupport (= 13.0.0)
-  - DivKit_Base (13.0.0):
-    - DivKit_BaseTiny (= 13.0.0)
-    - DivKit_BaseUI (= 13.0.0)
-  - DivKit_BaseTiny (13.0.0)
-  - DivKit_BaseUI (13.0.0):
-    - DivKit_BaseTiny (= 13.0.0)
-  - DivKit_CommonCore (13.0.0):
-    - DivKit_Base (= 13.0.0)
-    - DivKit_BaseTiny (= 13.0.0)
-  - DivKit_LayoutKit (13.0.0):
-    - DivKit_BaseTiny (= 13.0.0)
-    - DivKit_BaseUI (= 13.0.0)
-    - DivKit_CommonCore (= 13.0.0)
-    - DivKit_LayoutKitInterface (= 13.0.0)
-  - DivKit_LayoutKitInterface (13.0.0):
-    - DivKit_Base (= 13.0.0)
-    - DivKit_BaseTiny (= 13.0.0)
-    - DivKit_BaseUI (= 13.0.0)
-  - DivKit_Networking (13.0.0):
-    - DivKit_Base (= 13.0.0)
-  - DivKit_Serialization (13.0.0):
-    - DivKit_CommonCore (= 13.0.0)
-  - DivKit_TemplatesSupport (13.0.0):
-    - DivKit_CommonCore (= 13.0.0)
-    - DivKit_Serialization (= 13.0.0)
   - DoubleConversion (1.1.6)
   - fast_float (6.1.4)
   - FBLazyVector (0.78.3)
@@ -43,31 +8,6 @@ PODS:
   - hermes-engine (0.78.3):
     - hermes-engine/Pre-built (= 0.78.3)
   - hermes-engine/Pre-built (0.78.3)
-  - NitroIap (15.2.0):
-    - DoubleConversion
-    - glog
-    - hermes-engine
-    - NitroModules
-    - openiap (= 2.1.0)
-    - RCT-Folly (= 2024.11.18.00)
-    - RCTRequired
-    - RCTTypeSafety
-    - React-callinvoker
-    - React-Core
-    - React-debug
-    - React-Fabric
-    - React-featureflags
-    - React-graphics
-    - React-ImageManager
-    - React-jsi
-    - React-NativeModulesApple
-    - React-RCTFabric
-    - React-rendererdebug
-    - React-utils
-    - ReactCodegen
-    - ReactCommon/turbomodule/bridging
-    - ReactCommon/turbomodule/core
-    - Yoga
   - NitroModules (0.35.4):
     - DoubleConversion
     - glog
@@ -91,7 +31,6 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - openiap (2.1.0)
   - RCT-Folly (2024.11.18.00):
     - boost
     - DoubleConversion
@@ -1477,10 +1416,6 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-yandex-mobile-ads (0.7.0):
-    - React-Core
-    - YandexMobileAds (= 5.5.0)
-    - YandexMobileAdsInstream (= 0.15.0)
   - React-NativeModulesApple (0.78.3):
     - glog
     - hermes-engine
@@ -2048,22 +1983,6 @@ PODS:
   - SocketRocket (0.7.1)
   - TextToSpeech (4.1.1):
     - React-Core
-  - YandexMobileAds (5.5.0):
-    - DivKit (~> 13.0)
-    - YandexMobileAds/Static (= 5.5.0)
-  - YandexMobileAds/Static (5.5.0):
-    - DivKit (~> 13.0)
-    - YandexMobileMetrica (< 5.0.0, >= 4.0.0)
-  - YandexMobileAdsInstream (0.15.0):
-    - YandexMobileAds (~> 5.5.0)
-  - YandexMobileMetrica (4.5.2):
-    - YandexMobileMetrica/Static (= 4.5.2)
-  - YandexMobileMetrica/Static (4.5.2):
-    - YandexMobileMetrica/Static/Core (= 4.5.2)
-    - YandexMobileMetrica/Static/Crashes (= 4.5.2)
-  - YandexMobileMetrica/Static/Core (4.5.2)
-  - YandexMobileMetrica/Static/Crashes (4.5.2):
-    - YandexMobileMetrica/Static/Core
   - Yoga (0.0.0)
 
 DEPENDENCIES:
@@ -2074,7 +1993,6 @@ DEPENDENCIES:
   - fmt (from `../node_modules/react-native/third-party-podspecs/fmt.podspec`)
   - glog (from `../node_modules/react-native/third-party-podspecs/glog.podspec`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
-  - NitroIap (from `../node_modules/react-native-iap`)
   - NitroModules (from `../node_modules/react-native-nitro-modules`)
   - RCT-Folly (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
   - RCT-Folly/Fabric (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
@@ -2114,7 +2032,6 @@ DEPENDENCIES:
   - "react-native-slider (from `../node_modules/@react-native-community/slider`)"
   - react-native-tracking-transparency (from `../node_modules/react-native-tracking-transparency`)
   - react-native-webview (from `../node_modules/react-native-webview`)
-  - react-native-yandex-mobile-ads (from `../node_modules/react-native-yandex-mobile-ads`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-perflogger (from `../node_modules/react-native/ReactCommon/reactperflogger`)
   - React-performancetimeline (from `../node_modules/react-native/ReactCommon/react/performance/timeline`)
@@ -2156,21 +2073,7 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
-    - DivKit
-    - DivKit_Base
-    - DivKit_BaseTiny
-    - DivKit_BaseUI
-    - DivKit_CommonCore
-    - DivKit_LayoutKit
-    - DivKit_LayoutKitInterface
-    - DivKit_Networking
-    - DivKit_Serialization
-    - DivKit_TemplatesSupport
-    - openiap
     - SocketRocket
-    - YandexMobileAds
-    - YandexMobileAdsInstream
-    - YandexMobileMetrica
 
 EXTERNAL SOURCES:
   boost:
@@ -2188,8 +2091,6 @@ EXTERNAL SOURCES:
   hermes-engine:
     :podspec: "../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec"
     :tag: hermes-2025-01-13-RNv0.78.0-a942ef374897d85da38e9c8904574f8376555388
-  NitroIap:
-    :path: "../node_modules/react-native-iap"
   NitroModules:
     :path: "../node_modules/react-native-nitro-modules"
   RCT-Folly:
@@ -2264,8 +2165,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-tracking-transparency"
   react-native-webview:
     :path: "../node_modules/react-native-webview"
-  react-native-yandex-mobile-ads:
-    :path: "../node_modules/react-native-yandex-mobile-ads"
   React-NativeModulesApple:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios"
   React-perflogger:
@@ -2345,25 +2244,13 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   boost: 7e761d76ca2ce687f7cc98e698152abd03a18f90
-  DivKit: cbc853a0e94022835e9307e604135aa25424e284
-  DivKit_Base: 538c8daf847099e700646beb2b447aee1a4818fe
-  DivKit_BaseTiny: 1fa9cd01974dc65430bf409fef57e9a9b4c0679f
-  DivKit_BaseUI: b0478ce03702bbda3aa76f4388c05249ef578878
-  DivKit_CommonCore: 4db51be9c1263c0f7b62e9fb864785f47ab57875
-  DivKit_LayoutKit: c7974256f128cb2bbd7d5d6711c95c63727c53b3
-  DivKit_LayoutKitInterface: 02b3436a7191ab1b517da54a5fe076f9f6977c31
-  DivKit_Networking: 400504b0212282bd047c6720f70abaf74f6e4dd8
-  DivKit_Serialization: 4a55e41a1f06ec211e696963403db53469a19337
-  DivKit_TemplatesSupport: 6cb0a79e7673caeb05686403bd2b9a34c3624571
   DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
   fast_float: 06eeec4fe712a76acc9376682e4808b05ce978b6
   FBLazyVector: e053802577a711add20e45bbbf5dd1180b6ca62e
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: eb93e2f488219332457c3c4eafd2738ddc7e80b8
   hermes-engine: b5c9cfbe6415f1b0b24759f2942c8f33e9af6347
-  NitroIap: a4fa6e4a6c4944f9d5cf4f1160cf60fb8fbd8dd8
   NitroModules: 5b66210b99c71a938e08518124d2f90cc2113881
-  openiap: 35b7ebf3b953bc3f24a57fcb5f98fc4dd30f1b04
   RCT-Folly: e78785aa9ba2ed998ea4151e314036f6c49e6d82
   RCTDeprecation: cf39863b43871c2031050605fb884019b6193910
   RCTRequired: 8fdd66f4a97f352b66f38cfef13fc11b12d2c884
@@ -2400,7 +2287,6 @@ SPEC CHECKSUMS:
   react-native-slider: 310d3f89edd6ca8344a974bfe83a29a3fbb60e5a
   react-native-tracking-transparency: 15eb319f2b982070eb9831582af27d87badfa624
   react-native-webview: 564ff69d38cdd9ae870feb99743accb6f18fdc2f
-  react-native-yandex-mobile-ads: 80084708e1572b11b9303229129f81438cc60fe3
   React-NativeModulesApple: c8bb2bc56d39bd122c56ef58a55c3f34d53f1585
   React-perflogger: d06f0fd0727356651a5535f6d717130187aeb667
   React-performancetimeline: 7afc2307ffc4047cef95eb711ea39a12fd90d533
@@ -2439,11 +2325,8 @@ SPEC CHECKSUMS:
   RNSVG: 91c395070d1f12849a0cde52f04b45db51c41066
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   TextToSpeech: 89b239221ec378d213af422d14789a729705360b
-  YandexMobileAds: 1affe9f27183a569960e108a4b4cb6cbcfc8eaea
-  YandexMobileAdsInstream: 65f00989f45cf61cb359eeef42e0f1001f2501d1
-  YandexMobileMetrica: f5368ee93f286c793d73b58da00929babfc897c1
   Yoga: eca8dd841b7cd47d82d66be58af8e3aeb819012f
 
-PODFILE CHECKSUM: c7dd8985323c1a9dff6186d5cf304a541870a681
+PODFILE CHECKSUM: 0f951f92c28cb08725b216a6985952e1f75dabc9
 
 COCOAPODS: 1.16.2

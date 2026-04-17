@@ -58,11 +58,10 @@ target 'read_en' do
         end
       end
 
-      # Fix duplicate symbols in YandexMobileAds for read_en target
-      if target.name == 'read_en'
+      # Suppress warnings for YandexMobileAds
+      if target.name == 'read_en' || target.name == 'Pods-read_en'
         target.build_configurations.each do |config|
-          config.build_settings['OTHER_LDFLAGS'] ||= '$(inherited)'
-          config.build_settings['OTHER_LDFLAGS'] += ' -Xlinker -allow_duplicated_symbols'
+          config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
         end
       end
     end
