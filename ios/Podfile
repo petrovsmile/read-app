@@ -28,16 +28,20 @@ if linkage != nil
 end
 
 target 'read_en' do
-  config = use_native_modules!
+  config = {
+    :reactNativePath => '../node_modules/react-native'
+  }
 
   use_react_native!(
     :path => config[:reactNativePath],
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
-  # Override YandexMobileAds version to use stable version without duplicate symbols
-  pod 'YandexMobileAds', '5.9.1'
-  pod 'YandexMobileAdsInstream', '0.19.0'
+  # Add Yandex Mobile Ads
+  pod 'react-native-yandex-mobile-ads', :path => '../node_modules/react-native-yandex-mobile-ads'
+
+  # Manually add required pods that would be autolinked
+  pod 'react-native-safe-area-context', :path => '../node_modules/react-native-safe-area-context' if File.exist?('../node_modules/react-native-safe-area-context')
 
   target 'read_enTests' do
     inherit! :complete
