@@ -58,10 +58,6 @@ import * as RNIap from 'react-native-iap';
 
 import { requestTrackingPermission } from 'react-native-tracking-transparency';
 
-import { MobileAds, BannerView, InterstitialAdManager, RewardedAdManager } from 'react-native-yandex-mobile-ads';
-
-MobileAds.initialize({ userConsent: true, locationConsent: true });
-
 import { NativeModules } from 'react-native';
 const { YandexMetrica } = NativeModules;
 var Sound = require('react-native-sound');

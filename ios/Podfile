@@ -40,9 +40,6 @@ target 'read_en' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
-  # Add Yandex Mobile Ads
-  pod 'react-native-yandex-mobile-ads', :path => '../node_modules/react-native-yandex-mobile-ads'
-
   # Manually add required pods that would be autolinked
   pod 'react-native-safe-area-context', :path => '../node_modules/react-native-safe-area-context' if File.exist?('../node_modules/react-native-safe-area-context')
 
