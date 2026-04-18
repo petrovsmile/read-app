@@ -37,8 +37,16 @@ PODS:
   - fmt (11.0.2)
   - glog (0.3.5)
   - hermes-engine (0.78.3):
-    - hermes-engine/Pre-built (= 0.78.3)
-  - hermes-engine/Pre-built (0.78.3)
+    - hermes-engine/cdp (= 0.78.3)
+    - hermes-engine/Hermes (= 0.78.3)
+    - hermes-engine/inspector (= 0.78.3)
+    - hermes-engine/inspector_chrome (= 0.78.3)
+    - hermes-engine/Public (= 0.78.3)
+  - hermes-engine/cdp (0.78.3)
+  - hermes-engine/Hermes (0.78.3)
+  - hermes-engine/inspector (0.78.3)
+  - hermes-engine/inspector_chrome (0.78.3)
+  - hermes-engine/Public (0.78.3)
   - NitroModules (0.35.4):
     - DoubleConversion
     - glog
@@ -1447,10 +1455,6 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-yandex-mobile-ads (0.9.1):
-    - React-Core
-    - YandexMobileAds (= 5.9.1)
-    - YandexMobileAdsInstream (= 0.19.0)
   - React-NativeModulesApple (0.78.3):
     - glog
     - hermes-engine
@@ -2089,7 +2093,6 @@ DEPENDENCIES:
   - "react-native-slider (from `../node_modules/@react-native-community/slider`)"
   - react-native-tracking-transparency (from `../node_modules/react-native-tracking-transparency`)
   - react-native-webview (from `../node_modules/react-native-webview`)
-  - react-native-yandex-mobile-ads (from `../node_modules/react-native-yandex-mobile-ads`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-perflogger (from `../node_modules/react-native/ReactCommon/reactperflogger`)
   - React-performancetimeline (from `../node_modules/react-native/ReactCommon/react/performance/timeline`)
@@ -2128,6 +2131,8 @@ DEPENDENCIES:
   - RNStoreReview (from `../node_modules/react-native-store-review`)
   - RNSVG (from `../node_modules/react-native-svg`)
   - TextToSpeech (from `../node_modules/react-native-tts`)
+  - YandexMobileAds (= 5.9.1)
+  - YandexMobileAdsInstream (= 0.19.0)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
 SPEC REPOS:
@@ -2236,8 +2241,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-tracking-transparency"
   react-native-webview:
     :path: "../node_modules/react-native-webview"
-  react-native-yandex-mobile-ads:
-    :path: "../node_modules/react-native-yandex-mobile-ads"
   React-NativeModulesApple:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios"
   React-perflogger:
@@ -2333,7 +2336,7 @@ SPEC CHECKSUMS:
   FBLazyVector: e053802577a711add20e45bbbf5dd1180b6ca62e
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: eb93e2f488219332457c3c4eafd2738ddc7e80b8
-  hermes-engine: b5c9cfbe6415f1b0b24759f2942c8f33e9af6347
+  hermes-engine: 53c327c3658dca9fe0ec67e5d946edd23d244976
   NitroModules: 5b66210b99c71a938e08518124d2f90cc2113881
   RCT-Folly: e78785aa9ba2ed998ea4151e314036f6c49e6d82
   RCTDeprecation: cf39863b43871c2031050605fb884019b6193910
@@ -2371,7 +2374,6 @@ SPEC CHECKSUMS:
   react-native-slider: 310d3f89edd6ca8344a974bfe83a29a3fbb60e5a
   react-native-tracking-transparency: 15eb319f2b982070eb9831582af27d87badfa624
   react-native-webview: 564ff69d38cdd9ae870feb99743accb6f18fdc2f
-  react-native-yandex-mobile-ads: 5c3756a5ce581de29d0fe186950910955b3fd018
   React-NativeModulesApple: c8bb2bc56d39bd122c56ef58a55c3f34d53f1585
   React-perflogger: d06f0fd0727356651a5535f6d717130187aeb667
   React-performancetimeline: 7afc2307ffc4047cef95eb711ea39a12fd90d533
@@ -2416,6 +2418,6 @@ SPEC CHECKSUMS:
   YandexMobileMetrica: f5368ee93f286c793d73b58da00929babfc897c1
   Yoga: eca8dd841b7cd47d82d66be58af8e3aeb819012f
 
-PODFILE CHECKSUM: 4c856fe10f5402fd5524afe5ab98b444a1f74d18
+PODFILE CHECKSUM: 09f373bd7d59c31c5d4dd117b1daa4cc7c743ce6
 
 COCOAPODS: 1.16.2
