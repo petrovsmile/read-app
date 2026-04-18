@@ -1,5 +1,18 @@
 #!/usr/bin/env ruby
 
+# Remove YandexMobileAdsSample that causes build issues
+sample_path = File.expand_path('../node_modules/YandexMobileAdsSample', __dir__)
+if File.exist?(sample_path)
+  FileUtils.rm_rf(sample_path)
+  puts "✓ Removed YandexMobileAdsSample"
+end
+
+yandex_mobile_ads_path = File.expand_path('../node_modules/yandex-mobile-ads', __dir__)
+if File.exist?(yandex_mobile_ads_path)
+  FileUtils.rm_rf(yandex_mobile_ads_path)
+  puts "✓ Removed yandex-mobile-ads"
+end
+
 # Update YandexMobileAds version in react-native-yandex-mobile-ads podspec
 podspec_path = File.expand_path('../node_modules/react-native-yandex-mobile-ads/react-native-yandex-mobile-ads.podspec', __dir__)
 

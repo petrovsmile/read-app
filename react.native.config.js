@@ -9,4 +9,9 @@ module.exports = {
       android: null,
     },
   },
+  // Ignore problematic sample apps that are included in dependencies
+  excludePackages: [
+    'YandexMobileAdsSample',
+    'yandex-mobile-ads',
+  ],
 };
