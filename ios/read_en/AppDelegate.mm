@@ -2,7 +2,6 @@
 
 #import <React/RCTLinkingManager.h>
 #import <React/RCTBundleURLProvider.h>
-#import <YandexMobileMetrica/YandexMobileMetrica.h>
 
 @implementation AppDelegate
 
@@ -13,9 +12,6 @@
   // They will be passed down to the ViewController used by React Native.
   self.initialProps = @{};
 
-  YMMYandexMetricaConfiguration *configuration = [[YMMYandexMetricaConfiguration alloc] initWithApiKey:@"c810cef0-e69a-4201-81ce-35e3d0e8ce8d"];
-  [YMMYandexMetrica activateWithConfiguration:configuration];
-  
   return [super application:application didFinishLaunchingWithOptions:launchOptions];
 }
 
